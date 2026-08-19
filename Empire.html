@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cinzel+Decorative:wght@700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!--
+  ============================================================================
+  FIREBASE SETUP — do this before hosting
+  ============================================================================
+  1. Go to https://console.firebase.google.com and create a new project
+     (any name, e.g. "empire-game"). You can decline Google Analytics.
+  2. In the project, click the "</>" (Web) icon to register a web app.
+     Give it any nickname, skip Firebase Hosting.
+  3. Firebase will show you a `firebaseConfig` object. Copy it and paste it
+     over the placeholder object below (search for "PASTE YOUR FIREBASE").
+  4. In the left sidebar go to Build > Realtime Database > Create Database.
+     Choose any location, and start in "test mode" (or use scoped rules
+     that don't expire).
+  5. Save this file and open it locally to test — Realtime Database works
+     fine from a plain HTML file, no build step needed.
+  6. To host: push this file to a GitHub repo and enable GitHub Pages
+     (Settings > Pages > Deploy from branch). Share the resulting URL —
+     everyone can join from their own phone/laptop using a room code.
+  ============================================================================
+-->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<style>
+  :root{
+    --ink:#211527;
+    --ink-deep:#150d1a;
+    --parchment:#efe3c4;
+    --parchment-dim:#e2d3ab;
+    --parchment-line:#c9b482;
+    --gold:#c9a24b;
+    --gold-bright:#f0cd7c;
+    --wax:#8c3a2b;
+    --wax-bright:#c15238;
+    --emerald:#3f6b4f;
+    --emerald-bright:#5e9877;
+    --ink-text:#2a2013;
+    --shadow:rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at top, #3a2645 0%, var(--ink) 45%, var(--ink-deep) 100%);
+    font-family:'Crimson Text', serif;
+    color:var(--parchment);
+    display:flex;
+    justify-content:center;
+    padding:28px 14px 60px;
+  }
+  .app{ width:100%; max-width:780px; }
+
+  h1,h2,h3,.display{ font-family:'Cinzel', serif; letter-spacing:.02em; }
+  .brand{
+    font-family:'Cinzel Decorative', serif;
+    text-align:center;
+    font-size:2.4rem;
+    color:var(--gold-bright);
+    text-shadow:0 2px 0 var(--ink-deep), 0 0 24px rgba(240,205,124,.25);
+    margin:0 0 4px;
+  }
+  .tagline{
+    text-align:center;
+    color:var(--parchment-dim);
+    font-style:italic;
+    margin:0 0 26px;
+    opacity:.85;
+  }
+
+  .seal{
+    width:64px;height:64px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold) 55%, #8a6a25 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 0 #5b451c, 0 6px 14px var(--shadow), inset 0 0 0 2px rgba(255,255,255,.25);
+    font-size:1.7rem;
+    margin:0 auto 14px;
+    flex-shrink:0;
+  }
+  .seal.wax{ background:radial-gradient(circle at 35% 30%, var(--wax-bright), var(--wax) 60%, #4c1c14 100%); }
+
+  .card{
+    background:linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dim) 100%);
+    color:var(--ink-text);
+    border-radius:14px;
+    padding:26px 24px;
+    margin-bottom:18px;
+    box-shadow:0 10px 0 rgba(0,0,0,.28), 0 22px 40px var(--shadow);
+    border:2px solid var(--parchment-line);
+    position:relative;
+  }
+  .card::before{
+    content:"";
+    position:absolute; inset:6px;
+    border:1px solid rgba(140,58,43,.25);
+    border-radius:9px;
+    pointer-events:none;
+  }
+  .card h2{ margin-top:0; font-size:1.3rem; color:#4a2e14; }
+  .card h3{ font-size:1rem; color:#5b3a1c; text-transform:uppercase; letter-spacing:.08em; margin:0 0 10px; }
+
+  label{ display:block; font-size:.85rem; font-weight:600; margin:14px 0 6px; color:#5b3a1c; text-transform:uppercase; letter-spacing:.06em; }
+  input[type=text], select, textarea{
+    width:100%;
+    font-family:'Crimson Text', serif;
+    font-size:1.05rem;
+    padding:11px 12px;
+    border-radius:8px;
+    border:2px solid var(--parchment-line);
+    background:#fbf6e8;
+    color:var(--ink-text);
+  }
+  input[type=text]:focus, select:focus, textarea:focus{ outline:2px solid var(--gold); }
+  textarea{ min-height:90px; resize:vertical; font-size:.95rem; }
+
+  button{
+    font-family:'Cinzel', serif;
+    font-size:.95rem;
+    letter-spacing:.04em;
+    cursor:pointer;
+    border:none;
+    border-radius:9px;
+    padding:13px 20px;
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color:#3a2a0d;
+    box-shadow:0 4px 0 #7d5e22, 0 8px 14px var(--shadow);
+    transition:transform .08s ease;
+    width:100%;
+    margin-top:14px;
+  }
+  button:active{ transform:translateY(3px); box-shadow:0 1px 0 #7d5e22; }
+  button:disabled{ opacity:.45; cursor:not-allowed; }
+  button.secondary{
+    background:linear-gradient(180deg, #efe3c4, #d8c69f);
+    box-shadow:0 4px 0 #a8905f, 0 8px 14px var(--shadow);
+    color:#4a2e14;
+  }
+  button.danger{
+    background:linear-gradient(180deg, var(--wax-bright), var(--wax));
+    color:#fdece6;
+    box-shadow:0 4px 0 #4c1c14, 0 8px 14px var(--shadow);
+  }
+  button.small{ width:auto; padding:8px 14px; font-size:.8rem; margin:0; }
+
+  .row{ display:flex; gap:10px; }
+  .row > *{ flex:1; }
+
+  .code-badge{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:1.5rem; font-weight:700; letter-spacing:.28em;
+    color:#3a2a0d;
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    border-radius:10px; padding:14px 10px;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.3), 0 6px 0 #7d5e22;
+    margin:6px 0 4px;
+  }
+  .hint{ font-size:.8rem; color:#7a6640; text-align:center; margin-top:2px; }
+
+  /* Flag banner (color + icon), used wherever a player's banner is shown */
+  .flag-wrap{ display:inline-flex; align-items:flex-start; gap:2px; vertical-align:middle; }
+  .flag-pole{ width:3px; border-radius:2px; background:#5b3a1c; align-self:stretch; }
+  .flag-cloth{
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.2), 0 2px 3px rgba(0,0,0,.25);
+    clip-path:polygon(0 0, 100% 0, 76% 50%, 100% 100%, 0 100%);
+    margin-top:2px;
+  }
+  .flag-wrap.xs .flag-cloth{ width:20px; height:14px; font-size:.6rem; }
+  .flag-wrap.xs .flag-pole{ height:18px; }
+  .flag-wrap.sm .flag-cloth{ width:30px; height:21px; font-size:.85rem; }
+  .flag-wrap.sm .flag-pole{ height:27px; }
+  .flag-wrap.md .flag-cloth{ width:44px; height:30px; font-size:1.1rem; }
+  .flag-wrap.md .flag-pole{ height:38px; }
+  .flag-wrap.lg .flag-cloth{ width:60px; height:40px; font-size:1.5rem; }
+  .flag-wrap.lg .flag-pole{ height:50px; }
+
+  .player-chip{
+    display:flex; align-items:center; gap:10px;
+    background:#fbf6e8; border:1px solid var(--parchment-line);
+    border-radius:9px; padding:9px 12px; margin-bottom:8px;
+  }
+  .player-chip .name{ font-weight:600; flex:1; }
+  .player-chip .tag{ font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:#8a6a25; font-weight:700;}
+
+  .divider{ height:1px; background:var(--parchment-line); margin:18px 0; opacity:.7; }
+
+  .turn-banner{
+    text-align:center;
+    padding:16px;
+    border-radius:10px;
+    margin-bottom:16px;
+    font-family:'Cinzel', serif;
+    font-size:1.05rem;
+    border:2px dashed var(--gold);
+    background:rgba(201,162,75,.12);
+    color:var(--gold-bright);
+  }
+  .turn-banner.mine{
+    border-style:solid;
+    background:rgba(63,107,79,.18);
+    border-color:var(--emerald-bright);
+    color:#c9f0d8;
+    animation:stamp .5s ease;
+  }
+  @keyframes stamp{
+    0%{ transform:scale(1.5) rotate(-8deg); opacity:0; }
+    60%{ transform:scale(.96) rotate(2deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0); }
+  }
+
+  .identity-box{
+    text-align:center;
+    background:linear-gradient(180deg,#2f1f3a,#1c1224);
+    border:2px solid var(--gold);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .identity-box .label{ font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); }
+  .identity-box .split{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+  .identity-box .split .col{ min-width:120px; }
+  .identity-box .split .name{ font-family:'Cinzel Decorative', serif; font-size:1.3rem; color:var(--parchment); margin-top:2px; }
+  .identity-box .split .cat-label{ font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--gold-bright); opacity:.8; }
+
+  /* Island map */
+  .island-wrap{ position:relative; border-radius:14px; overflow:hidden; box-shadow:0 8px 20px rgba(0,0,0,.35); }
+  .island-wrap canvas{ width:100%; height:auto; display:block; }
+  .island-labels{ position:absolute; inset:0; pointer-events:none; }
+  .map-marker{ position:absolute; transform:translate(-50%,-100%); filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+  .map-marker.active .flag-cloth{ box-shadow:inset 0 0 0 1px rgba(0,0,0,.2), 0 0 0 3px var(--emerald), 0 2px 3px rgba(0,0,0,.25); }
+  .map-flash{ position:absolute; width:16px; height:16px; border-radius:50%; border:3px solid var(--gold-bright); transform:translate(-50%,-50%); animation:mapPulse .9s ease forwards; }
+  @keyframes mapPulse{
+    0%{ transform:translate(-50%,-50%) scale(.4); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(6); opacity:0; }
+  }
+
+  /* Empire legend (below the map) */
+  .empire-legend{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  .legend-row{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    background:#fbf6e8; border:1px solid var(--parchment-line); border-radius:10px; padding:10px 12px;
+  }
+  .legend-row.active{ border-color:var(--emerald); box-shadow:0 0 0 2px rgba(63,107,79,.35); }
+  .legend-row .leader-name{ font-weight:700; }
+  .legend-row .tier-tag{ font-size:1.1rem; }
+  .legend-members{ display:flex; flex-wrap:wrap; gap:4px; }
+  .lock-row{ font-size:.72rem; color:#7a6640; display:flex; gap:10px; flex-wrap:wrap; }
+
+  .log-list{ max-height:220px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:6px; padding-right:4px; }
+  .log-entry{ font-size:.88rem; padding:8px 10px; border-radius:7px; background:#fbf6e8; border-left:4px solid var(--parchment-line); }
+  .log-entry.correct{ border-left-color:var(--emerald); }
+  .log-entry.wrong{ border-left-color:var(--wax); }
+  .log-entry.absorbed{ border-left-color:var(--gold); background:#fbeecb; }
+
+  .revealed-list{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .revealed-list:last-child{ margin-bottom:0; }
+  .revealed-chip{ background:var(--emerald); color:#eafff1; border-radius:20px; padding:4px 12px; font-size:.85rem; }
+
+  .category-box{
+    text-align:center;
+    font-family:'Cinzel', serif;
+    font-size:1.35rem;
+    color:#4a2e14;
+    background:#fbf6e8;
+    border:2px solid var(--gold);
+    border-radius:10px;
+    padding:16px 10px;
+    margin:8px 0 4px;
+  }
+  .category-box .eyebrow{ font-size:.7rem; text-transform:uppercase; letter-spacing:.14em; color:#8a6a25; display:block; margin-bottom:4px; font-family:'Crimson Text', serif; font-weight:700; }
+  .category-box.dual{ display:flex; gap:10px; }
+  .category-box.dual .half{ flex:1; }
+  .submit-status{ display:flex; align-items:center; gap:10px; }
+  .submit-status .dot{ font-size:1.1rem; }
+
+  .error-msg{ color:#8c2f2f; font-weight:600; font-size:.88rem; margin-top:8px; }
+  .muted{ color:#7a6640; font-size:.88rem; }
+  .center{ text-align:center; }
+
+  .winner-hero{ text-align:center; padding:20px 10px 6px; }
+  .winner-hero .name{ font-family:'Cinzel Decorative', serif; font-size:2rem; color:#4a2e14; margin:10px 0; }
+
+  #screen-home, #screen-lobby, #screen-submit, #screen-game, #screen-end{ display:none; }
+
+  #ceremony-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:999;
+    background:rgba(21,13,26,.92);
+    flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:20px;
+    transition:opacity .4s ease;
+    opacity:1;
+  }
+  #ceremony-overlay.hide{ opacity:0; }
+  .ceremony-seal{
+    width:88px;height:88px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--wax-bright), var(--wax) 60%, #4c1c14 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-size:2.4rem;
+    box-shadow:0 6px 0 #3a1712, 0 14px 26px rgba(0,0,0,.5);
+    animation: stamp .6s ease;
+    margin-bottom:18px;
+  }
+  .ceremony-text{ font-family:'Cinzel Decorative', serif; font-size:1.5rem; color:var(--gold-bright); margin-bottom:10px; }
+  .ceremony-categories{ font-family:'Cinzel', serif; color:var(--parchment); font-size:1.15rem; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--parchment-line); border-radius:8px; }
+</style>
+</head>
+<body>
+
+<div id="ceremony-overlay">
+  <div class="ceremony-seal">🔏</div>
+  <div class="ceremony-text">Categories Locked!</div>
+  <div class="ceremony-categories" id="ceremony-categories"></div>
+</div>
+
+<div class="app">
+  <div class="brand">👑 EMPIRE</div>
+  <p class="tagline">Ask. Conquer. Absorb. Rule alone.</p>
+
+  <!-- HOME -->
+  <div id="screen-home">
+    <div class="card">
+      <div class="seal">⚜</div>
+      <h2 class="center" style="text-align:center;">Found or Join an Empire</h2>
+      <label for="home-name">Your name</label>
+      <input type="text" id="home-name" maxlength="18" placeholder="e.g. Constantine">
+
+      <div class="row">
+        <div>
+          <label for="home-banner-color">Banner color</label>
+          <select id="home-banner-color"></select>
+        </div>
+        <div>
+          <label for="home-banner-icon">Banner emblem</label>
+          <select id="home-banner-icon"></select>
+        </div>
+      </div>
+      <div class="center" style="margin-top:10px;" id="home-flag-preview"></div>
+
+      <div class="divider"></div>
+
+      <h3>Start a new game</h3>
+      <button id="btn-create">Create Empire</button>
+
+      <div class="divider"></div>
+
+      <h3>Join a friend's game</h3>
+      <label for="home-code">Room code</label>
+      <input type="text" id="home-code" maxlength="5" placeholder="e.g. RVQXK" style="text-transform:uppercase;letter-spacing:.2em;text-align:center;">
+      <button class="secondary" id="btn-join">Join Empire</button>
+
+      <div class="error-msg" id="home-error"></div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="screen-lobby">
+    <div class="card">
+      <h3>Room code — share this</h3>
+      <div class="code-badge" id="lobby-code">-----</div>
+      <p class="hint">Everyone joins at this page and enters this code.</p>
+
+      <div class="divider"></div>
+
+      <h3>Players joined (<span id="lobby-count">0</span>)</h3>
+      <div id="lobby-players"></div>
+
+      <div class="divider"></div>
+
+      <h3>Category 1</h3>
+      <div class="category-box">
+        <span class="eyebrow">First category</span>
+        <span id="lobby-category-name-0">—</span>
+      </div>
+      <div class="lobby-category-host-controls" style="display:none;">
+        <div class="row">
+          <button class="secondary small" data-idx="0" data-action="reroll" style="width:100%;">🎲 Reroll</button>
+          <button class="secondary small" data-idx="0" data-action="toggle-custom" style="width:100%;">✏️ Type my own</button>
+        </div>
+        <div class="lobby-custom-category-row-0" style="display:none;">
+          <label for="lobby-custom-category-0">Custom category 1</label>
+          <input type="text" id="lobby-custom-category-0" maxlength="40" placeholder="e.g. Types of Cheese">
+          <button class="secondary" data-idx="0" data-action="use-custom">Use this category</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Category 2</h3>
+      <div class="category-box">
+        <span class="eyebrow">Second category</span>
+        <span id="lobby-category-name-1">—</span>
+      </div>
+      <div class="lobby-category-host-controls" style="display:none;">
+        <div class="row">
+          <button class="secondary small" data-idx="1" data-action="reroll" style="width:100%;">🎲 Reroll</button>
+          <button class="secondary small" data-idx="1" data-action="toggle-custom" style="width:100%;">✏️ Type my own</button>
+        </div>
+        <div class="lobby-custom-category-row-1" style="display:none;">
+          <label for="lobby-custom-category-1">Custom category 2</label>
+          <input type="text" id="lobby-custom-category-1" maxlength="40" placeholder="e.g. Kitchen Utensils">
+          <button class="secondary" data-idx="1" data-action="use-custom">Use this category</button>
+        </div>
+      </div>
+      <p class="hint">Players will need to answer for BOTH categories — it takes both correct guesses to conquer an empire.</p>
+
+      <div id="lobby-host-controls" style="display:none;">
+        <div class="divider"></div>
+        <label for="lobby-oldest">Who is the oldest player? (they go first)</label>
+        <select id="lobby-oldest"></select>
+        <button id="btn-start" disabled>Lock In & Start</button>
+        <p class="hint" id="lobby-start-hint">Need at least 3 players.</p>
+      </div>
+      <div id="lobby-guest-note" class="muted center" style="display:none; margin-top:14px;">Waiting for the host to pick categories and start…</div>
+
+      <button class="danger small" id="btn-leave-lobby" style="width:auto;margin-top:18px;">Leave</button>
+    </div>
+  </div>
+
+  <!-- SUBMIT IDENTITY -->
+  <div id="screen-submit">
+    <div class="card">
+      <h3>Categories</h3>
+      <div class="category-box dual">
+        <div class="half"><span class="eyebrow">Category 1</span><span id="submit-category-name-0">—</span></div>
+        <div class="half"><span class="eyebrow">Category 2</span><span id="submit-category-name-1">—</span></div>
+      </div>
+
+      <div id="submit-form">
+        <label for="submit-input-0">Your secret word for Category 1</label>
+        <input type="text" id="submit-input-0" maxlength="40" placeholder="Type your answer...">
+        <label for="submit-input-1">Your secret word for Category 2</label>
+        <input type="text" id="submit-input-1" maxlength="40" placeholder="Type your answer...">
+        <button id="btn-submit-identity">Submit Both</button>
+        <p class="hint">Neither answer needs to be unique — duplicates are fine.</p>
+      </div>
+
+      <div id="submit-waiting" style="display:none;">
+        <div class="category-box dual" style="margin-top:14px;">
+          <div class="half"><span class="eyebrow">You said</span><span id="submit-my-answer-0">—</span></div>
+          <div class="half"><span class="eyebrow">You said</span><span id="submit-my-answer-1">—</span></div>
+        </div>
+        <p class="muted center">Waiting for everyone else to submit…</p>
+      </div>
+
+      <div class="divider"></div>
+      <h3>Who's ready</h3>
+      <div id="submit-status-list"></div>
+    </div>
+    <button class="danger small" id="btn-leave-submit" style="width:auto;">Leave</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game">
+    <div class="card">
+      <h3 id="game-category-label-0">Category 1</h3>
+      <div class="revealed-list" id="game-readlist-0"></div>
+      <h3 id="game-category-label-1">Category 2</h3>
+      <div class="revealed-list" id="game-readlist-1"></div>
+    </div>
+
+    <div class="identity-box">
+      <div class="label">Your secret identities</div>
+      <div class="split">
+        <div class="col"><div class="cat-label" id="game-my-cat-label-0">Category 1</div><div class="name" id="game-my-identity-0">—</div></div>
+        <div class="col"><div class="cat-label" id="game-my-cat-label-1">Category 2</div><div class="name" id="game-my-identity-1">—</div></div>
+      </div>
+    </div>
+
+    <div class="turn-banner" id="game-turn-banner">—</div>
+
+    <div class="card" id="game-guess-card" style="display:none;">
+      <h3>Make your move</h3>
+      <label for="guess-target">Which empire are you asking?</label>
+      <select id="guess-target"></select>
+      <label for="guess-category">About which category?</label>
+      <select id="guess-category"></select>
+      <label for="guess-name">Are they...?</label>
+      <select id="guess-name"></select>
+      <button id="btn-ask">Ask "Are you...?"</button>
+    </div>
+
+    <div class="card">
+      <h3>The Map</h3>
+      <div class="island-wrap">
+        <canvas id="island-canvas" width="640" height="400"></canvas>
+        <div class="island-labels" id="island-labels"></div>
+      </div>
+      <div class="empire-legend" id="empire-legend"></div>
+    </div>
+
+    <div class="card" id="game-scratchpad-card">
+      <h3>Empire notes (shared with your team only)</h3>
+      <textarea id="game-scratchpad" placeholder="Jot down what your empire has ruled out..."></textarea>
+    </div>
+
+    <div class="card">
+      <h3>Chronicle</h3>
+      <div class="log-list" id="game-log"></div>
+    </div>
+
+    <button class="danger small" id="btn-leave-game" style="width:auto;">Leave</button>
+  </div>
+
+  <!-- END -->
+  <div id="screen-end">
+    <div class="card">
+      <div class="winner-hero">
+        <div class="seal wax">👑</div>
+        <div class="muted">RULES THE EMPIRE</div>
+        <div class="name" id="end-winner-name">—</div>
+      </div>
+      <div class="divider"></div>
+      <h3>All identities revealed</h3>
+      <div id="end-reveal-list"></div>
+      <div id="end-host-controls" style="display:none;">
+        <button id="btn-play-again">Start a New Empire (same players)</button>
+      </div>
+      <button class="secondary small" id="btn-home-from-end" style="width:auto;margin-top:14px;">Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   FIREBASE CONFIG — PASTE YOUR FIREBASE config object here
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDI8U6Q7H-B5yqQUPp8rnpPkUGx0EMOFfw",
+  authDomain: "empire-game-3e03e.firebaseapp.com",
+  databaseURL: "https://empire-game-3e03e-default-rtdb.firebaseio.com",
+  projectId: "empire-game-3e03e",
+  storageBucket: "empire-game-3e03e.firebasestorage.app",
+  messagingSenderId: "710400902285",
+  appId: "1:710400902285:web:91507bcaa08f7489004ec4",
+  measurementId: "G-WRGFYQ1H71"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ============================================================
+   CATEGORY NAME POOL
+   ============================================================ */
+const CATEGORY_NAMES = [
+  "U.S. Presidents","Greek Gods","Disney Villains","Superheroes","Famous Scientists",
+  "Movie Villains","Cartoon Characters","Famous Pirates","Video Game Characters",
+  "Historical Rulers & Conquerors","Famous Chefs","Olympic Legends","Famous Painters",
+  "Music Icons","Types of Pizza Toppings","Kitchen Utensils","Dog Breeds","Ice Cream Flavors",
+  "Board Games","Types of Dance","Famous Wizards & Witches","Sitcom Characters",
+  "Types of Cheese","National Parks","Broadway Musicals","Fast Food Chains",
+  "Types of Sandwiches","Cocktails","Zodiac Signs","Emojis","School Subjects",
+  "Types of Weather","Car Brands","Halloween Costumes","Famous Duos","Things Found at the Beach",
+  "Summer Olympic Sports","80s Movies","Breakfast Foods","Types of Hats","Dinosaurs",
+  "Famous Explorers","Candy Bars","Types of Music Genres","Things in a Toolbox","Famous Astronauts"
+];
+function randomCategoryName(...exclude){
+  const pool = CATEGORY_NAMES.filter(c => !exclude.includes(c));
+  const usable = pool.length ? pool : CATEGORY_NAMES;
+  return usable[Math.floor(Math.random()*usable.length)];
+}
+
+/* ============================================================
+   EMPIRE VISUAL TIERS
+   ============================================================ */
+function empireTier(memberCount){
+  if(memberCount <= 1) return { icon:'🧍', label:'Settler' };
+  if(memberCount === 2) return { icon:'🛖', label:'Hamlet' };
+  if(memberCount <= 5) return { icon:'🏰', label:'Castle' };
+  return { icon:'🏛️', label:'Empire' };
+}
+
+/* ============================================================
+   BANNERS — color and emblem are chosen independently
+   ============================================================ */
+const BANNER_COLORS = [
+  { id:'crimson', name:'Crimson', hex:'#8c2f2f' },
+  { id:'steel', name:'Steel Grey', hex:'#52606d' },
+  { id:'gold', name:'Gold', hex:'#a9821b' },
+  { id:'emerald', name:'Emerald', hex:'#2f6b4f' },
+  { id:'amber', name:'Amber', hex:'#b5651d' },
+  { id:'jade', name:'Jade', hex:'#2f8f6b' },
+  { id:'umber', name:'Umber Brown', hex:'#6b4226' },
+  { id:'rust', name:'Rust', hex:'#a84b2f' },
+  { id:'violet', name:'Violet', hex:'#6b4a8f' },
+  { id:'sapphire', name:'Sapphire', hex:'#2f4f8f' },
+  { id:'shadow', name:'Shadow Purple', hex:'#3a2645' },
+  { id:'slate', name:'Slate', hex:'#556270' },
+  { id:'iron', name:'Iron Grey', hex:'#55534a' },
+  { id:'teal', name:'Teal', hex:'#1f6f6b' },
+  { id:'rose', name:'Rose', hex:'#c9607a' },
+  { id:'bronze', name:'Bronze', hex:'#8f6b3a' }
+];
+const BANNER_ICONS = ['🦁','🐺','🦅','🐉','🦂','🐍','🐻','🦊','🦌','🐴','🦇','🦉','🐗','🦚','🦩','🐢','⚔️','🛡️','🏹','⭐','🌙','☀️','🔥','❄️','🍀','💀'];
+
+function getBannerColor(id){
+  return (BANNER_COLORS.find(c => c.id === id) || BANNER_COLORS[0]);
+}
+function hexToRgba(hex, alpha){
+  const h = (hex||'#c9a24b').replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function flagHtml(colorId, icon, size){
+  const color = getBannerColor(colorId).hex;
+  const sz = size || 'md';
+  return `<span class="flag-wrap ${sz}"><span class="flag-pole"></span><span class="flag-cloth" style="background:${color};">${icon||'⚜'}</span></span>`;
+}
+
+/* ============================================================
+   ISLAND MAP — one connected landmass, partitioned into regions
+   (nearest-seed fill, like a Voronoi diagram) so absorbing an
+   empire visibly recolors its territory instead of just merging
+   separate shapes.
+   ============================================================ */
+const MAP_W = 640, MAP_H = 400;
+
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+  return h;
+}
+function seededRandom(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Fixed island coastline — stable across every game, doesn't regenerate.
+const ISLAND_POLY = (function(){
+  const rng = seededRandom(90210);
+  const cx = MAP_W/2, cy = MAP_H/2;
+  const baseR = Math.min(MAP_W,MAP_H)*0.42;
+  const n = 30;
+  const pts = [];
+  for(let i=0;i<n;i++){
+    const angle = (i/n)*Math.PI*2;
+    const r = baseR * (0.78 + rng()*0.42);
+    pts.push([cx + Math.cos(angle)*r*1.28, cy + Math.sin(angle)*r*0.85]);
+  }
+  return pts;
+})();
+
+function pointInPolygon(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0], yi=poly[i][1], xj=poly[j][0], yj=poly[j][1];
+    const intersect = ((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||0.0000001)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+
+function computeSeedPositions(playerIds){
+  const n = playerIds.length;
+  if(n===0) return [];
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n * (MAP_W/MAP_H))));
+  const rows = Math.max(1, Math.ceil(n/cols));
+  const cellW = MAP_W/cols, cellH = MAP_H/rows;
+  return playerIds.map((pid, idx) => {
+    const col = idx % cols, row = Math.floor(idx/cols);
+    const rng = seededRandom(hashStr(pid));
+    let x = col*cellW + cellW*(0.28 + rng()*0.44);
+    let y = row*cellH + cellH*(0.28 + rng()*0.44);
+    let tries = 0;
+    while(!pointInPolygon(x,y,ISLAND_POLY) && tries<12){
+      x += (MAP_W/2 - x) * 0.25;
+      y += (MAP_H/2 - y) * 0.25;
+      tries++;
+    }
+    return { pid, x, y };
+  });
+}
+
+let prevSeedLeader = {};
+let mapFlashes = {};
+
+function drawIslandMap(players){
+  const canvas = $('island-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,MAP_W,MAP_H);
+
+  const oceanGrad = ctx.createLinearGradient(0,0,0,MAP_H);
+  oceanGrad.addColorStop(0, '#204a68');
+  oceanGrad.addColorStop(1, '#0e2233');
+  ctx.fillStyle = oceanGrad;
+  ctx.fillRect(0,0,MAP_W,MAP_H);
+
+  const playerIds = Object.keys(players).sort((a,b)=>players[a].joinedAt-players[b].joinedAt);
+  const seeds = computeSeedPositions(playerIds);
+
+  const blockSize = 6;
+  for(let by=0; by<MAP_H; by+=blockSize){
+    for(let bx=0; bx<MAP_W; bx+=blockSize){
+      const cx = bx+blockSize/2, cy = by+blockSize/2;
+      if(!pointInPolygon(cx,cy,ISLAND_POLY)) continue;
+      let best=-1, bestDist=Infinity;
+      for(let i=0;i<seeds.length;i++){
+        const dx=seeds[i].x-cx, dy=seeds[i].y-cy;
+        const d = dx*dx+dy*dy;
+        if(d<bestDist){ bestDist=d; best=i; }
+      }
+      const ownerPid = seeds[best].pid;
+      const ownerPlayer = players[ownerPid];
+      const leaderId = ownerPlayer.leaderId || ownerPid;
+      const leaderPlayer = players[leaderId] || ownerPlayer;
+      ctx.fillStyle = getBannerColor(leaderPlayer.bannerColor).hex;
+      ctx.fillRect(bx,by,blockSize,blockSize);
+    }
+  }
+
+  ctx.beginPath();
+  ISLAND_POLY.forEach(([x,y],i)=> i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(50,38,18,0.55)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  return seeds;
+}
+
+function renderIslandLabels(seeds, players){
+  const leaders = new Set(getLeaders(players));
+  let html = '';
+
+  seeds.forEach(s => {
+    const leaderId = players[s.pid].leaderId || s.pid;
+    if(prevSeedLeader[s.pid] !== undefined && prevSeedLeader[s.pid] !== leaderId && !mapFlashes[s.pid]){
+      mapFlashes[s.pid] = true;
+      setTimeout(() => { delete mapFlashes[s.pid]; renderGame(); }, 900);
+    }
+    prevSeedLeader[s.pid] = leaderId;
+  });
+
+  seeds.filter(s => leaders.has(s.pid)).forEach(s => {
+    const p = players[s.pid];
+    const xPct = (s.x/MAP_W*100).toFixed(2), yPct = (s.y/MAP_H*100).toFixed(2);
+    const active = roomState.currentTurnPlayerId === s.pid;
+    html += `<div class="map-marker ${active?'active':''}" style="left:${xPct}%;top:${yPct}%;">${flagHtml(p.bannerColor,p.bannerIcon,'md')}</div>`;
+  });
+
+  seeds.filter(s => mapFlashes[s.pid]).forEach(s => {
+    const xPct = (s.x/MAP_W*100).toFixed(2), yPct = (s.y/MAP_H*100).toFixed(2);
+    html += `<div class="map-flash" style="left:${xPct}%;top:${yPct}%;"></div>`;
+  });
+
+  $('island-labels').innerHTML = html;
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let myPlayerId = localStorage.getItem('empire_playerId') || null;
+let myRoomCode = localStorage.getItem('empire_roomCode') || null;
+let myName = localStorage.getItem('empire_name') || '';
+let roomState = null;
+let roomRef = null;
+let lobbySelectedOldest = null;
+let lastTurnWasMine = false;
+let scratchpadDebounce = null;
+let customCategoryMode = [false, false];
+let finalizeAttempted = false;
+let selectedGuessCategory = 0;
+let prevRoomStatus = null;
+
+const $ = id => document.getElementById(id);
+const screens = ['screen-home','screen-lobby','screen-submit','screen-game','screen-end'];
+function showScreen(id){ screens.forEach(s => $(s).style.display = (s===id ? 'block' : 'none')); }
+
+function genId(){ return 'p' + Math.random().toString(36).slice(2,10); }
+function genRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='';
+  for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+$('home-banner-color').innerHTML = BANNER_COLORS.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+$('home-banner-icon').innerHTML = BANNER_ICONS.map(i => `<option value="${i}">${i}</option>`).join('');
+$('home-banner-color').selectedIndex = Math.floor(Math.random()*BANNER_COLORS.length);
+$('home-banner-icon').selectedIndex = Math.floor(Math.random()*BANNER_ICONS.length);
+function updateHomeFlagPreview(){
+  $('home-flag-preview').innerHTML = flagHtml($('home-banner-color').value, $('home-banner-icon').value, 'lg');
+}
+$('home-banner-color').addEventListener('change', updateHomeFlagPreview);
+$('home-banner-icon').addEventListener('change', updateHomeFlagPreview);
+updateHomeFlagPreview();
+
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
+$('btn-create').addEventListener('click', async () => {
+  const name = $('home-name').value.trim();
+  const bannerColor = $('home-banner-color').value;
+  const bannerIcon = $('home-banner-icon').value;
+  $('home-error').textContent = '';
+  if(!name){ $('home-error').textContent = 'Enter your name first.'; return; }
+  $('btn-create').disabled = true;
+  try{
+    let code, exists = true, tries = 0;
+    do{
+      code = genRoomCode();
+      const snap = await db.ref('rooms/'+code).once('value');
+      exists = snap.exists();
+      tries++;
+    } while(exists && tries < 8);
+
+    const playerId = genId();
+    const roomData = {
+      status: 'lobby',
+      hostId: playerId,
+      createdAt: Date.now(),
+      players: { [playerId]: { name, bannerColor, bannerIcon, isHost:true, joinedAt: Date.now() } }
+    };
+    await db.ref('rooms/'+code).set(roomData);
+    persistIdentity(code, playerId, name);
+    subscribeToRoom(code);
+  }catch(e){
+    $('home-error').textContent = 'Could not create a room. Check your Firebase setup.';
+    $('btn-create').disabled = false;
+  }
+});
+
+$('btn-join').addEventListener('click', async () => {
+  const name = $('home-name').value.trim();
+  const bannerColor = $('home-banner-color').value;
+  const bannerIcon = $('home-banner-icon').value;
+  const code = $('home-code').value.trim().toUpperCase();
+  $('home-error').textContent = '';
+  if(!name){ $('home-error').textContent = 'Enter your name first.'; return; }
+  if(!code){ $('home-error').textContent = 'Enter a room code.'; return; }
+  $('btn-join').disabled = true;
+  try{
+    const snap = await db.ref('rooms/'+code).once('value');
+    if(!snap.exists()){ $('home-error').textContent = 'No empire found with that code.'; $('btn-join').disabled=false; return; }
+    const room = snap.val();
+    if(room.status !== 'lobby'){ $('home-error').textContent = 'That game has already started.'; $('btn-join').disabled=false; return; }
+    const existingPlayers = Object.values(room.players||{});
+    if(existingPlayers.length >= 16){ $('home-error').textContent = 'That empire is full (16 players max).'; $('btn-join').disabled=false; return; }
+    if(existingPlayers.some(p => p.bannerColor === bannerColor && p.bannerIcon === bannerIcon)){
+      $('home-error').textContent = 'That exact banner is already taken in this empire — change the color or emblem.';
+      $('btn-join').disabled=false;
+      return;
+    }
+    const playerId = genId();
+    await db.ref(`rooms/${code}/players/${playerId}`).set({ name, bannerColor, bannerIcon, isHost:false, joinedAt: Date.now() });
+    persistIdentity(code, playerId, name);
+    subscribeToRoom(code);
+  }catch(e){
+    $('home-error').textContent = 'Something went wrong joining that room.';
+    $('btn-join').disabled = false;
+  }
+});
+
+function persistIdentity(code, playerId, name){
+  myRoomCode = code; myPlayerId = playerId; myName = name;
+  localStorage.setItem('empire_roomCode', code);
+  localStorage.setItem('empire_playerId', playerId);
+  localStorage.setItem('empire_name', name);
+}
+function clearIdentity(){
+  localStorage.removeItem('empire_roomCode');
+  localStorage.removeItem('empire_playerId');
+  localStorage.removeItem('empire_name');
+  myRoomCode = null; myPlayerId = null;
+  if(roomRef) roomRef.off();
+  roomRef = null; roomState = null;
+  prevRoomStatus = null; prevSeedLeader = {}; mapFlashes = {};
+}
+
+/* ============================================================
+   ROOM SUBSCRIPTION
+   ============================================================ */
+function subscribeToRoom(code){
+  if(roomRef) roomRef.off();
+  roomRef = db.ref('rooms/'+code);
+  roomRef.on('value', snap => {
+    if(!snap.exists()){
+      alert('This empire no longer exists.');
+      clearIdentity();
+      showScreen('screen-home');
+      return;
+    }
+    roomState = snap.val();
+    if(prevRoomStatus === 'lobby' && roomState.status === 'submitting'){
+      triggerCeremony(roomState.categories || ['','']);
+    }
+    prevRoomStatus = roomState.status;
+    render();
+  });
+}
+
+function render(){
+  if(!roomState) return;
+  if(roomState.status === 'lobby') renderLobby();
+  else if(roomState.status === 'submitting') renderSubmit();
+  else if(roomState.status === 'playing') renderGame();
+  else if(roomState.status === 'ended') renderEnd();
+}
+
+function triggerCeremony(categories){
+  const el = $('ceremony-overlay');
+  $('ceremony-categories').innerHTML = `<div>📜 ${escapeHtml(categories[0]||'')}</div><div>📜 ${escapeHtml(categories[1]||'')}</div>`;
+  el.style.display = 'flex';
+  el.classList.remove('hide');
+  clearTimeout(window.__ceremonyTimeout);
+  window.__ceremonyTimeout = setTimeout(() => {
+    el.classList.add('hide');
+    setTimeout(() => { el.style.display = 'none'; }, 400);
+  }, 1500);
+}
+
+/* ============================================================
+   LOBBY
+   ============================================================ */
+function renderLobby(){
+  showScreen('screen-lobby');
+  $('lobby-code').textContent = myRoomCode;
+  const players = Object.entries(roomState.players||{}).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
+  $('lobby-count').textContent = players.length;
+
+  $('lobby-players').innerHTML = players.map(([pid,p]) => `
+    <div class="player-chip">
+      ${flagHtml(p.bannerColor, p.bannerIcon, 'sm')}
+      <span class="name">${escapeHtml(p.name)}${pid===myPlayerId ? ' (you)' : ''}</span>
+      ${p.isHost ? '<span class="tag">👑 Host</span>' : ''}
+    </div>
+  `).join('');
+
+  const isHost = roomState.hostId === myPlayerId;
+  $('lobby-host-controls').style.display = isHost ? 'block' : 'none';
+  $('lobby-guest-note').style.display = isHost ? 'none' : 'block';
+  document.querySelectorAll('.lobby-category-host-controls').forEach(el => el.style.display = isHost ? 'block' : 'none');
+
+  if(isHost && !roomState.proposedCategories){
+    const c0 = randomCategoryName();
+    const c1 = randomCategoryName(c0);
+    roomRef.child('proposedCategories').set([c0, c1]);
+    roomState.proposedCategories = [c0, c1];
+  }
+  const proposed = roomState.proposedCategories || ['—','—'];
+  $('lobby-category-name-0').textContent = proposed[0] || '—';
+  $('lobby-category-name-1').textContent = proposed[1] || '—';
+
+  if(isHost){
+    const oldestSelect = $('lobby-oldest');
+    const prevVal = lobbySelectedOldest;
+    oldestSelect.innerHTML = players.map(([pid,p]) => `<option value="${pid}">${escapeHtml(p.name)}</option>`).join('');
+    if(prevVal && players.some(([pid])=>pid===prevVal)) oldestSelect.value = prevVal;
+    lobbySelectedOldest = oldestSelect.value;
+
+    const enough = players.length >= 3;
+    $('btn-start').disabled = !enough;
+    $('lobby-start-hint').textContent = enough ? '' : 'Need at least 3 players.';
+  }
+}
+
+$('lobby-oldest').addEventListener('change', e => { lobbySelectedOldest = e.target.value; });
+
+document.querySelectorAll('[data-action="reroll"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const idx = parseInt(btn.dataset.idx, 10);
+    const proposed = roomState.proposedCategories || ['',''];
+    const other = proposed[idx===0 ? 1 : 0];
+    const next = randomCategoryName(proposed[idx], other);
+    roomRef.child('proposedCategories').child(String(idx)).set(next);
+    customCategoryMode[idx] = false;
+    document.querySelector(`.lobby-custom-category-row-${idx}`).style.display = 'none';
+  });
+});
+
+document.querySelectorAll('[data-action="toggle-custom"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const idx = parseInt(btn.dataset.idx, 10);
+    customCategoryMode[idx] = !customCategoryMode[idx];
+    const row = document.querySelector(`.lobby-custom-category-row-${idx}`);
+    row.style.display = customCategoryMode[idx] ? 'block' : 'none';
+    if(customCategoryMode[idx]) $(`lobby-custom-category-${idx}`).focus();
+  });
+});
+
+document.querySelectorAll('[data-action="use-custom"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const idx = parseInt(btn.dataset.idx, 10);
+    const input = $(`lobby-custom-category-${idx}`);
+    const val = input.value.trim();
+    if(!val) return;
+    roomRef.child('proposedCategories').child(String(idx)).set(val);
+    input.value = '';
+    customCategoryMode[idx] = false;
+    document.querySelector(`.lobby-custom-category-row-${idx}`).style.display = 'none';
+  });
+});
+
+$('btn-start').addEventListener('click', async () => {
+  const players = Object.entries(roomState.players||{}).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
+  if(players.length < 3) return;
+  const proposed = roomState.proposedCategories || [randomCategoryName(), randomCategoryName()];
+  $('btn-start').disabled = true;
+
+  const updatedPlayers = {};
+  players.forEach(([pid,p]) => {
+    updatedPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, isHost: p.isHost, joinedAt: p.joinedAt, submitted: false };
+  });
+
+  const oldestId = lobbySelectedOldest || players[0][0];
+  const orderIds = players.map(([pid])=>pid);
+  const oldestIdx = orderIds.indexOf(oldestId);
+  const turnOrder = orderIds.slice(oldestIdx).concat(orderIds.slice(0, oldestIdx));
+
+  await roomRef.update({
+    status: 'submitting',
+    categories: [proposed[0], proposed[1]],
+    categoryLists: null,
+    players: updatedPlayers,
+    turnOrder,
+    currentTurnPlayerId: turnOrder[0],
+    log: null,
+    scratchpads: null,
+    winnerId: null
+  });
+});
+
+$('btn-leave-lobby').addEventListener('click', async () => { await leaveRoom(); });
+
+async function leaveRoom(){
+  if(roomRef && myPlayerId && roomState && roomState.players && roomState.players[myPlayerId]){
+    try{ await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).remove(); }catch(e){}
+  }
+  clearIdentity();
+  showScreen('screen-home');
+}
+$('btn-leave-game').addEventListener('click', leaveRoom);
+
+/* ============================================================
+   SUBMIT IDENTITY PHASE
+   ============================================================ */
+function renderSubmit(){
+  showScreen('screen-submit');
+  prevSeedLeader = {}; mapFlashes = {};
+  const players = roomState.players;
+  const categories = roomState.categories || ['Category 1','Category 2'];
+  $('submit-category-name-0').textContent = categories[0];
+  $('submit-category-name-1').textContent = categories[1];
+
+  const me = players[myPlayerId];
+  const alreadySubmitted = me && me.submitted;
+  $('submit-form').style.display = alreadySubmitted ? 'none' : 'block';
+  $('submit-waiting').style.display = alreadySubmitted ? 'block' : 'none';
+  if(alreadySubmitted && me.identities){
+    $('submit-my-answer-0').textContent = me.identities[0];
+    $('submit-my-answer-1').textContent = me.identities[1];
+  }
+
+  const sorted = Object.entries(players).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
+  $('submit-status-list').innerHTML = sorted.map(([pid,p]) => `
+    <div class="player-chip submit-status">
+      <span class="dot">${p.submitted ? '✅' : '⏳'}</span>
+      <span class="name">${escapeHtml(p.name)}${pid===myPlayerId ? ' (you)' : ''}</span>
+    </div>
+  `).join('');
+
+  const allSubmitted = Object.values(players).every(p => p.submitted);
+  if(allSubmitted && !finalizeAttempted){
+    finalizeAttempted = true;
+    finalizeSubmissions();
+  }
+}
+
+$('btn-submit-identity').addEventListener('click', async () => {
+  const val0 = $('submit-input-0').value.trim();
+  const val1 = $('submit-input-1').value.trim();
+  if(!val0 || !val1) return;
+  $('btn-submit-identity').disabled = true;
+  try{
+    await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).update({ identities: [val0, val1], submitted: true });
+  } finally {
+    $('btn-submit-identity').disabled = false;
+  }
+});
+
+$('btn-leave-submit').addEventListener('click', leaveRoom);
+
+async function finalizeSubmissions(){
+  try{
+    await roomRef.transaction(room => {
+      if(!room || room.status !== 'submitting') return room;
+      const players = room.players || {};
+      const allSubmitted = Object.values(players).every(p => p.submitted);
+      if(!allSubmitted) return room;
+      Object.keys(players).forEach(pid => {
+        players[pid].leaderId = pid;
+        players[pid].revealed = [false, false];
+      });
+      room.categoryLists = [
+        Object.values(players).map(p => p.identities[0]),
+        Object.values(players).map(p => p.identities[1])
+      ];
+      room.status = 'playing';
+      return room;
+    });
+  } finally {
+    finalizeAttempted = false;
+  }
+}
+
+/* ============================================================
+   GAME
+   ============================================================ */
+function getLeaders(players){
+  const set = new Set();
+  Object.values(players).forEach(p => set.add(p.leaderId));
+  return Array.from(set);
+}
+function getEmpireMembers(leaderId, players){
+  return Object.entries(players).filter(([pid,p]) => p.leaderId === leaderId).map(([pid]) => pid);
+}
+function nextLeaderInOrder(currentPid, players, turnOrder){
+  if(!turnOrder || !turnOrder.length) return currentPid;
+  const idx = turnOrder.indexOf(currentPid);
+  const startIdx = idx === -1 ? 0 : idx;
+  for(let step=1; step<=turnOrder.length; step++){
+    const candidate = turnOrder[(startIdx+step) % turnOrder.length];
+    if(players[candidate] && players[candidate].leaderId === candidate) return candidate;
+  }
+  return currentPid;
+}
+
+function renderGame(){
+  showScreen('screen-game');
+  const players = roomState.players;
+  const categories = roomState.categories || ['Category 1','Category 2'];
+  const categoryLists = roomState.categoryLists || [[],[]];
+  const myLeaderId = players[myPlayerId] ? players[myPlayerId].leaderId : myPlayerId;
+  const iAmLeader = players[myPlayerId] && players[myPlayerId].leaderId === myPlayerId;
+  const isMyTurn = roomState.currentTurnPlayerId === myPlayerId;
+
+  $('game-category-label-0').textContent = 'Category 1: ' + categories[0];
+  $('game-category-label-1').textContent = 'Category 2: ' + categories[1];
+
+  [0,1].forEach(ci => {
+    $('game-readlist-'+ci).innerHTML = (categoryLists[ci]||[]).map(n => {
+      const isRevealed = Object.values(players).some(p => p.revealed && p.revealed[ci] && p.identities && p.identities[ci]===n);
+      return `<span class="revealed-chip" style="background:${isRevealed ? 'var(--emerald)' : '#b8a06b'};">${escapeHtml(n)}</span>`;
+    }).join('');
+  });
+
+  const myIdentities = (players[myPlayerId] && players[myPlayerId].identities) || ['—','—'];
+  $('game-my-cat-label-0').textContent = categories[0];
+  $('game-my-cat-label-1').textContent = categories[1];
+  $('game-my-identity-0').textContent = myIdentities[0];
+  $('game-my-identity-1').textContent = myIdentities[1];
+
+  const turnBanner = $('game-turn-banner');
+  if(isMyTurn){
+    turnBanner.textContent = "It's your turn — make your move!";
+    turnBanner.className = 'turn-banner mine';
+  } else {
+    const turnPlayer = players[roomState.currentTurnPlayerId];
+    turnBanner.textContent = turnPlayer ? `Waiting on ${turnPlayer.name}'s move…` : 'Waiting…';
+    turnBanner.className = 'turn-banner';
+  }
+  lastTurnWasMine = isMyTurn;
+
+  $('game-guess-card').style.display = (isMyTurn && iAmLeader) ? 'block' : 'none';
+  if(isMyTurn && iAmLeader){
+    const otherLeaders = getLeaders(players).filter(lid => lid !== myPlayerId);
+    $('guess-target').innerHTML = otherLeaders.map(lid => {
+      const members = getEmpireMembers(lid, players);
+      const tier = empireTier(members.length);
+      const leaderName = players[lid].name;
+      const colorName = getBannerColor(players[lid].bannerColor).name;
+      return `<option value="${lid}">${players[lid].bannerIcon} ${colorName} — ${escapeHtml(leaderName)}'s ${tier.label} (${members.length} ${members.length===1?'ruler':'members'})</option>`;
+    }).join('');
+
+    $('guess-category').innerHTML = `<option value="0">${escapeHtml(categories[0])}</option><option value="1">${escapeHtml(categories[1])}</option>`;
+    $('guess-category').value = String(selectedGuessCategory);
+    updateGuessNameOptions();
+  }
+
+  const seeds = drawIslandMap(players);
+  renderIslandLabels(seeds, players);
+  renderEmpireLegend(players);
+
+  $('game-scratchpad-card').style.display = 'block';
+  const pad = (roomState.scratchpads && roomState.scratchpads[myLeaderId]) || '';
+  if(document.activeElement !== $('game-scratchpad')) $('game-scratchpad').value = pad;
+
+  const log = roomState.log ? Object.values(roomState.log).sort((a,b)=>a.ts-b.ts) : [];
+  $('game-log').innerHTML = log.length ? log.map(entry => `
+    <div class="log-entry ${entry.correct ? (entry.absorbed ? 'absorbed' : 'correct') : 'wrong'}">
+      <strong>${escapeHtml(entry.actorName)}</strong> asked ${escapeHtml(entry.targetName)}'s empire about <em>${escapeHtml(entry.categoryName)}</em>: "Are you <em>${escapeHtml(entry.guessName)}</em>?" —
+      <strong>${entry.correct ? (entry.absorbed ? 'YES! Empire fully conquered.' : 'YES! One identity cracked.') : 'No.'}</strong>
+    </div>
+  `).join('') : '<p class="muted">No moves yet.</p>';
+}
+
+function renderEmpireLegend(players){
+  const categories = roomState.categories || ['Category 1','Category 2'];
+  const leaders = getLeaders(players);
+  $('empire-legend').innerHTML = leaders.map(lid => {
+    const leader = players[lid];
+    const members = getEmpireMembers(lid, players);
+    const tier = empireTier(members.length);
+    const active = roomState.currentTurnPlayerId === lid;
+    const rev = leader.revealed || [false,false];
+    const memberFlags = members.filter(pid => pid !== lid).map(pid => {
+      const p = players[pid];
+      return `<span title="${escapeHtml(p.name)}">${flagHtml(p.bannerColor, p.bannerIcon, 'xs')}</span>`;
+    }).join('');
+    return `
+      <div class="legend-row ${active?'active':''}">
+        ${flagHtml(leader.bannerColor, leader.bannerIcon, 'sm')}
+        <span class="leader-name">${escapeHtml(leader.name)}${lid===myPlayerId?' (you)':''}</span>
+        <span class="tier-tag" title="${tier.label}">${tier.icon} ${tier.label}</span>
+        ${active ? '<span class="hint" style="margin:0;color:#2f6b4f;font-weight:700;">on the move</span>' : ''}
+        <div class="legend-members">${memberFlags}</div>
+        <div class="lock-row">
+          <span>${rev[0] ? '🔓' : '🔒'} ${escapeHtml(categories[0])}</span>
+          <span>${rev[1] ? '🔓' : '🔒'} ${escapeHtml(categories[1])}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+$('guess-category').addEventListener('change', e => {
+  selectedGuessCategory = parseInt(e.target.value, 10);
+  updateGuessNameOptions();
+});
+$('guess-target').addEventListener('change', updateGuessNameOptions);
+
+function updateGuessNameOptions(){
+  if(!roomState || roomState.status !== 'playing') return;
+  const players = roomState.players;
+  const categoryLists = roomState.categoryLists || [[],[]];
+  const ci = selectedGuessCategory;
+  const remaining = (categoryLists[ci]||[]).filter(n => !Object.values(players).some(p => p.revealed && p.revealed[ci] && p.identities && p.identities[ci]===n));
+  $('guess-name').innerHTML = remaining.sort().map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+}
+
+$('btn-ask').addEventListener('click', async () => {
+  const targetLeaderId = $('guess-target').value;
+  const categoryIndex = parseInt($('guess-category').value, 10);
+  const guessName = $('guess-name').value;
+  if(!targetLeaderId || !guessName) return;
+  $('btn-ask').disabled = true;
+  const categories = roomState.categories || ['Category 1','Category 2'];
+
+  try{
+    await roomRef.transaction(room => {
+      if(!room) return room;
+      if(room.currentTurnPlayerId !== myPlayerId) return room;
+      const players = room.players;
+      const target = players[targetLeaderId];
+      if(!target || !target.identities) return room;
+      const correct = target.identities[categoryIndex] === guessName;
+
+      room.log = room.log || {};
+      const logKey = 'l' + Date.now() + Math.floor(Math.random()*1000);
+      let absorbed = false;
+
+      if(correct){
+        target.revealed = target.revealed || [false,false];
+        target.revealed[categoryIndex] = true;
+        room.currentTurnPlayerId = myPlayerId;
+
+        if(target.revealed[0] && target.revealed[1]){
+          absorbed = true;
+          Object.keys(players).forEach(pid => {
+            if(players[pid].leaderId === targetLeaderId){
+              players[pid].leaderId = myPlayerId;
+            }
+          });
+          const uniqueLeaders = new Set(Object.values(players).map(p => p.leaderId));
+          if(uniqueLeaders.size === 1){
+            room.status = 'ended';
+            room.winnerId = myPlayerId;
+          }
+        }
+      } else {
+        room.currentTurnPlayerId = nextLeaderInOrder(myPlayerId, players, room.turnOrder);
+      }
+
+      room.log[logKey] = {
+        ts: Date.now(),
+        actorId: myPlayerId,
+        actorName: players[myPlayerId].name,
+        targetId: targetLeaderId,
+        targetName: target.name,
+        categoryName: categories[categoryIndex],
+        guessName,
+        correct,
+        absorbed
+      };
+      return room;
+    });
+  } finally {
+    $('btn-ask').disabled = false;
+  }
+});
+
+$('game-scratchpad').addEventListener('input', e => {
+  const players = roomState.players;
+  const myLeaderId = players[myPlayerId] ? players[myPlayerId].leaderId : myPlayerId;
+  clearTimeout(scratchpadDebounce);
+  const val = e.target.value;
+  scratchpadDebounce = setTimeout(() => {
+    db.ref(`rooms/${myRoomCode}/scratchpads/${myLeaderId}`).set(val);
+  }, 400);
+});
+
+/* ============================================================
+   END SCREEN
+   ============================================================ */
+function renderEnd(){
+  showScreen('screen-end');
+  const players = roomState.players;
+  const categories = roomState.categories || ['Category 1','Category 2'];
+  const winner = players[roomState.winnerId];
+  $('end-winner-name').textContent = winner ? winner.name : '—';
+
+  const sorted = Object.entries(players).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
+  $('end-reveal-list').innerHTML = sorted.map(([pid,p]) => `
+    <div class="player-chip">
+      ${flagHtml(p.bannerColor, p.bannerIcon, 'sm')}
+      <span class="name">${escapeHtml(p.name)}</span>
+      <span class="tag" style="color:#5b3a1c;">${escapeHtml(categories[0])}: ${escapeHtml((p.identities||[])[0]||'')} · ${escapeHtml(categories[1])}: ${escapeHtml((p.identities||[])[1]||'')}</span>
+    </div>
+  `).join('');
+
+  const isHost = roomState.hostId === myPlayerId;
+  $('end-host-controls').style.display = isHost ? 'block' : 'none';
+}
+
+$('btn-play-again').addEventListener('click', async () => {
+  const players = roomState.players;
+  const resetPlayers = {};
+  Object.entries(players).forEach(([pid,p]) => {
+    resetPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, isHost: p.isHost, joinedAt: p.joinedAt };
+  });
+  await roomRef.update({
+    status: 'lobby',
+    players: resetPlayers,
+    categories: null,
+    categoryLists: null,
+    proposedCategories: null,
+    turnOrder: null,
+    currentTurnPlayerId: null,
+    log: null,
+    scratchpads: null,
+    winnerId: null
+  });
+});
+
+$('btn-home-from-end').addEventListener('click', async () => { await leaveRoom(); });
+
+/* ============================================================
+   UTIL + BOOT
+   ============================================================ */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+(function boot(){
+  if(myRoomCode && myPlayerId){
+    $('home-name').value = myName || '';
+    subscribeToRoom(myRoomCode);
+    showScreen('screen-lobby');
+  } else {
+    showScreen('screen-home');
+  }
+})();
+</script>
+</body>
+</html>
