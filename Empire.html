@@ -361,17 +361,27 @@
   }
   #loading-screen.hide{ opacity:0; }
 
-  .loading-tap-prompt{ animation:pulseSoft 1.8s ease-in-out infinite; }
   @keyframes pulseSoft{
     0%,100%{ opacity:.75; transform:scale(1); }
     50%{ opacity:1; transform:scale(1.04); }
   }
+
+  .loading-tap-prompt{ animation:pulseSoft 1.8s ease-in-out infinite; }
   .loading-tap-text{
     font-family:'Cinzel', serif; color:var(--gold-bright); font-size:1.1rem; letter-spacing:.08em;
   }
 
   .loading-stage{ display:none; }
   .loading-stage.playing{ display:block; }
+
+  .loading-enter-prompt{
+    font-family:'Cinzel', serif; color:var(--gold-bright); font-size:1rem; letter-spacing:.08em;
+    margin-top:30px; opacity:0; pointer-events:none;
+  }
+  .loading-enter-prompt.show{
+    opacity:1; pointer-events:auto; cursor:pointer;
+    animation:pulseSoft 1.8s ease-in-out infinite;
+  }
 
   .loading-seal{
     width:100px; height:100px; border-radius:50%; margin:0 auto 20px;
@@ -439,6 +449,7 @@
     <div class="loading-title">EMPIRE</div>
     <div class="loading-tagline">Ask. Conquer. Absorb. Rule alone.</div>
     <div class="loading-bar-track"><div class="loading-bar-fill"></div></div>
+    <div id="loading-enter-prompt" class="loading-enter-prompt">Click to enter the realm</div>
   </div>
 </div>
 
@@ -1124,10 +1135,13 @@ $('btn-mute').addEventListener('click', () => {
 });
 
 /* ============================================================
-   ONE-TIME LOADING SCREEN — plays epic-adventure.mp3 and a short
-   animated intro, but only the very first time the page loads in
-   this browser tab/session. Returning to the home screen or
-   restarting a game never re-triggers it.
+   ONE-TIME LOADING SCREEN — tapping "Begin" starts the animation
+   and plays epic-adventure.mp3 audibly (a real click, so browsers
+   allow it). Once the ~5s animation finishes, an "Enter" button
+   appears instead of auto-transitioning, so the player can keep
+   listening to the track for as long as they like before moving
+   on. Returning to the home screen or restarting a game never
+   re-triggers any of this.
    ============================================================ */
 const INTRO_SEEN_KEY = 'empire_intro_seen';
 
@@ -1138,7 +1152,7 @@ function shouldShowIntro(){
 function startIntroSequence(){
   sessionStorage.setItem(INTRO_SEEN_KEY, 'true');
   initSfxContext();
-  unlockMainMusicElement();
+  unlockMainMusicElement(); // pre-authorize main-music for later, since it starts outside this gesture
 
   $('loading-tap-prompt').style.display = 'none';
   $('loading-stage').classList.add('playing');
@@ -1148,7 +1162,12 @@ function startIntroSequence(){
   introAudio.currentTime = 0;
   introAudio.play().catch(() => {});
 
-  setTimeout(finishIntro, 5000);
+  setTimeout(showEnterPrompt, 5000);
+}
+
+function showEnterPrompt(){
+  $('loading-enter-prompt').classList.add('show');
+  $('loading-screen').addEventListener('click', finishIntro, { once:true });
 }
 
 function finishIntro(){
@@ -1174,7 +1193,7 @@ function startMainMusic(){
   } else {
     $('loading-screen').style.display = 'none';
     // No intro this session — start main music on the player's first
-    // click anywhere, same gesture-unlock pattern as before.
+    // click anywhere, since that's a real gesture we can use directly.
     document.addEventListener('click', function startOnFirstClick(){
       initSfxContext();
       audioUnlocked = true;
