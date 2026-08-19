@@ -24,8 +24,10 @@
   5. Save this file and open it locally to test — Realtime Database works
      fine from a plain HTML file, no build step needed.
   6. To host: push this file to a GitHub repo and enable GitHub Pages
-     (Settings > Pages > Deploy from branch). Share the resulting URL —
-     everyone can join from their own phone/laptop using a room code.
+     (Settings > Pages > Deploy from branch). Naming it index.html gives
+     you a clean root URL; any other name still works, just appended to
+     the URL. Share the resulting link — everyone can join from their
+     own phone/laptop using a room code.
   ============================================================================
 -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -155,6 +157,15 @@
   .row{ display:flex; gap:10px; }
   .row > *{ flex:1; }
 
+  .mode-toggle{ display:flex; gap:10px; margin-top:6px; }
+  .mode-btn{
+    flex:1; text-align:center; cursor:pointer;
+    background:#fbf6e8; border:2px solid var(--parchment-line); border-radius:10px;
+    padding:12px 10px; font-family:'Cinzel', serif; font-size:.85rem; color:#5b3a1c;
+  }
+  .mode-btn.active{ border-color:var(--emerald); background:#e7f3ea; box-shadow:0 0 0 2px rgba(63,107,79,.25); color:#1f4a33; }
+  .mode-btn .sub{ display:block; font-family:'Crimson Text', serif; font-size:.72rem; text-transform:none; letter-spacing:0; color:#7a6640; margin-top:2px; }
+
   .code-badge{
     display:flex; align-items:center; justify-content:center; gap:10px;
     font-family:'JetBrains Mono', monospace;
@@ -184,6 +195,8 @@
   .flag-wrap.md .flag-pole{ height:38px; }
   .flag-wrap.lg .flag-cloth{ width:60px; height:40px; font-size:1.5rem; }
   .flag-wrap.lg .flag-pole{ height:50px; }
+  .flag-wrap.xl .flag-cloth{ width:92px; height:62px; font-size:2.3rem; }
+  .flag-wrap.xl .flag-pole{ height:78px; }
 
   .player-chip{
     display:flex; align-items:center; gap:10px;
@@ -257,6 +270,14 @@
   .legend-members{ display:flex; flex-wrap:wrap; gap:4px; }
   .lock-row{ font-size:.72rem; color:#7a6640; display:flex; gap:10px; flex-wrap:wrap; }
 
+  .chat-list{ max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px; }
+  .chat-msg{ font-size:.88rem; padding:8px 10px; border-radius:7px; background:#fbf6e8; border-left:4px solid var(--parchment-line); }
+  .chat-msg .author{ font-weight:700; margin-right:6px; }
+  .chat-msg.mine{ border-left-color:var(--emerald); background:#eef7f0; }
+  .chat-input-row{ display:flex; gap:8px; margin-top:10px; }
+  .chat-input-row input{ flex:1; }
+  .chat-input-row button{ width:auto; margin-top:0; white-space:nowrap; }
+
   .log-list{ max-height:220px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:6px; padding-right:4px; }
   .log-entry{ font-size:.88rem; padding:8px 10px; border-radius:7px; background:#fbf6e8; border-left:4px solid var(--parchment-line); }
   .log-entry.correct{ border-left-color:var(--emerald); }
@@ -317,9 +338,20 @@
 
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:var(--parchment-line); border-radius:8px; }
+
+  .mute-btn{
+    position:fixed; top:14px; right:14px; z-index:1000;
+    width:46px; height:46px; border-radius:50%;
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+    border:none; box-shadow:0 3px 0 #7d5e22, 0 6px 12px rgba(0,0,0,.4);
+    font-size:1.3rem; cursor:pointer; padding:0; margin:0;
+  }
+  .mute-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 #7d5e22; }
 </style>
 </head>
 <body>
+<button id="btn-mute" class="mute-btn" title="Toggle music">🔊</button>
+
 
 <div id="ceremony-overlay">
   <div class="ceremony-seal">🔏</div>
@@ -350,6 +382,9 @@
         </div>
       </div>
       <div class="center" style="margin-top:10px;" id="home-flag-preview"></div>
+      <div class="center" style="margin-top:8px;">
+        <div id="home-banner-name" style="font-family:'Cinzel Decorative', serif; color:#4a2e14; font-size:1.05rem;">—</div>
+      </div>
 
       <div class="divider"></div>
 
@@ -381,6 +416,16 @@
 
       <div class="divider"></div>
 
+      <h3>Game length</h3>
+      <div class="mode-toggle lobby-category-host-controls" style="display:none;">
+        <div class="mode-btn" data-count="1" id="mode-btn-1">⚡ Quick<span class="sub">1 category</span></div>
+        <div class="mode-btn" data-count="2" id="mode-btn-2">🏛️ Full<span class="sub">2 categories</span></div>
+      </div>
+      <p class="hint lobby-category-host-controls" style="display:none;">Quick games need only one correct guess to conquer an empire. Full games need two — takes longer, more suspense.</p>
+      <p class="muted center lobby-mode-guest-note" style="display:none;">Game length: <strong id="lobby-mode-guest-label">—</strong></p>
+
+      <div class="divider"></div>
+
       <h3>Category 1</h3>
       <div class="category-box">
         <span class="eyebrow">First category</span>
@@ -398,25 +443,25 @@
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <h3>Category 2</h3>
-      <div class="category-box">
-        <span class="eyebrow">Second category</span>
-        <span id="lobby-category-name-1">—</span>
-      </div>
-      <div class="lobby-category-host-controls" style="display:none;">
-        <div class="row">
-          <button class="secondary small" data-idx="1" data-action="reroll" style="width:100%;">🎲 Reroll</button>
-          <button class="secondary small" data-idx="1" data-action="toggle-custom" style="width:100%;">✏️ Type my own</button>
+      <div id="lobby-category2-section">
+        <div class="divider"></div>
+        <h3>Category 2</h3>
+        <div class="category-box">
+          <span class="eyebrow">Second category</span>
+          <span id="lobby-category-name-1">—</span>
         </div>
-        <div class="lobby-custom-category-row-1" style="display:none;">
-          <label for="lobby-custom-category-1">Custom category 2</label>
-          <input type="text" id="lobby-custom-category-1" maxlength="40" placeholder="e.g. Kitchen Utensils">
-          <button class="secondary" data-idx="1" data-action="use-custom">Use this category</button>
+        <div class="lobby-category-host-controls" style="display:none;">
+          <div class="row">
+            <button class="secondary small" data-idx="1" data-action="reroll" style="width:100%;">🎲 Reroll</button>
+            <button class="secondary small" data-idx="1" data-action="toggle-custom" style="width:100%;">✏️ Type my own</button>
+          </div>
+          <div class="lobby-custom-category-row-1" style="display:none;">
+            <label for="lobby-custom-category-1">Custom category 2</label>
+            <input type="text" id="lobby-custom-category-1" maxlength="40" placeholder="e.g. Kitchen Utensils">
+            <button class="secondary" data-idx="1" data-action="use-custom">Use this category</button>
+          </div>
         </div>
       </div>
-      <p class="hint">Players will need to answer for BOTH categories — it takes both correct guesses to conquer an empire.</p>
 
       <div id="lobby-host-controls" style="display:none;">
         <div class="divider"></div>
@@ -437,22 +482,24 @@
       <h3>Categories</h3>
       <div class="category-box dual">
         <div class="half"><span class="eyebrow">Category 1</span><span id="submit-category-name-0">—</span></div>
-        <div class="half"><span class="eyebrow">Category 2</span><span id="submit-category-name-1">—</span></div>
+        <div class="half" id="submit-category2-label-wrap"><span class="eyebrow">Category 2</span><span id="submit-category-name-1">—</span></div>
       </div>
 
       <div id="submit-form">
         <label for="submit-input-0">Your secret word for Category 1</label>
         <input type="text" id="submit-input-0" maxlength="40" placeholder="Type your answer...">
-        <label for="submit-input-1">Your secret word for Category 2</label>
-        <input type="text" id="submit-input-1" maxlength="40" placeholder="Type your answer...">
-        <button id="btn-submit-identity">Submit Both</button>
-        <p class="hint">Neither answer needs to be unique — duplicates are fine.</p>
+        <div id="submit-category2-input-wrap">
+          <label for="submit-input-1">Your secret word for Category 2</label>
+          <input type="text" id="submit-input-1" maxlength="40" placeholder="Type your answer...">
+        </div>
+        <button id="btn-submit-identity">Submit</button>
+        <p class="hint">Answers don't need to be unique — duplicates are fine.</p>
       </div>
 
       <div id="submit-waiting" style="display:none;">
         <div class="category-box dual" style="margin-top:14px;">
           <div class="half"><span class="eyebrow">You said</span><span id="submit-my-answer-0">—</span></div>
-          <div class="half"><span class="eyebrow">You said</span><span id="submit-my-answer-1">—</span></div>
+          <div class="half" id="submit-my-answer1-wrap"><span class="eyebrow">You said</span><span id="submit-my-answer-1">—</span></div>
         </div>
         <p class="muted center">Waiting for everyone else to submit…</p>
       </div>
@@ -469,15 +516,17 @@
     <div class="card">
       <h3 id="game-category-label-0">Category 1</h3>
       <div class="revealed-list" id="game-readlist-0"></div>
-      <h3 id="game-category-label-1">Category 2</h3>
-      <div class="revealed-list" id="game-readlist-1"></div>
+      <div id="game-category2-block">
+        <h3 id="game-category-label-1">Category 2</h3>
+        <div class="revealed-list" id="game-readlist-1"></div>
+      </div>
     </div>
 
     <div class="identity-box">
-      <div class="label">Your secret identities</div>
+      <div class="label">Your secret identit<span id="identity-plural-y">y</span></div>
       <div class="split">
         <div class="col"><div class="cat-label" id="game-my-cat-label-0">Category 1</div><div class="name" id="game-my-identity-0">—</div></div>
-        <div class="col"><div class="cat-label" id="game-my-cat-label-1">Category 2</div><div class="name" id="game-my-identity-1">—</div></div>
+        <div class="col" id="game-my-identity1-wrap"><div class="cat-label" id="game-my-cat-label-1">Category 2</div><div class="name" id="game-my-identity-1">—</div></div>
       </div>
     </div>
 
@@ -487,8 +536,10 @@
       <h3>Make your move</h3>
       <label for="guess-target">Which empire are you asking?</label>
       <select id="guess-target"></select>
-      <label for="guess-category">About which category?</label>
-      <select id="guess-category"></select>
+      <div id="guess-category-wrap">
+        <label for="guess-category">About which category?</label>
+        <select id="guess-category"></select>
+      </div>
       <label for="guess-name">Are they...?</label>
       <select id="guess-name"></select>
       <button id="btn-ask">Ask "Are you...?"</button>
@@ -505,7 +556,11 @@
 
     <div class="card" id="game-scratchpad-card">
       <h3>Empire notes (shared with your team only)</h3>
-      <textarea id="game-scratchpad" placeholder="Jot down what your empire has ruled out..."></textarea>
+      <div class="chat-list" id="game-scratchpad-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="game-scratchpad-input" maxlength="200" placeholder="Type a note for your team...">
+        <button class="secondary" id="btn-scratchpad-send">Send</button>
+      </div>
     </div>
 
     <div class="card">
@@ -520,13 +575,23 @@
   <div id="screen-end">
     <div class="card">
       <div class="winner-hero">
-        <div class="seal wax">👑</div>
+        <div id="end-winner-flag" class="center"></div>
         <div class="muted">RULES THE EMPIRE</div>
         <div class="name" id="end-winner-name">—</div>
+        <div class="muted" id="end-winner-banner-name" style="font-style:italic;"></div>
       </div>
+
       <div class="divider"></div>
-      <h3>All identities revealed</h3>
+      <h3>The Realm</h3>
+      <div class="island-wrap">
+        <canvas id="island-canvas-end" width="640" height="400"></canvas>
+        <div class="island-labels" id="island-labels-end"></div>
+      </div>
+
+      <div class="divider"></div>
+      <h3>All Identities Revealed</h3>
       <div id="end-reveal-list"></div>
+
       <div id="end-host-controls" style="display:none;">
         <button id="btn-play-again">Start a New Empire (same players)</button>
       </div>
@@ -622,6 +687,64 @@ function flagHtml(colorId, icon, size){
 }
 
 /* ============================================================
+   BANNER NAME GENERATOR — combines a color-flavored word with an
+   emblem-flavored word (e.g. Crimson + 🐗 -> "Fire Hogs")
+   ============================================================ */
+const COLOR_WORDS = {
+  crimson: ['Crimson','Blood','Fire','Ember','Scarlet'],
+  steel: ['Steel','Iron','Storm','Ashen','Grey'],
+  gold: ['Golden','Sun','Amber','Radiant','Gilded'],
+  emerald: ['Emerald','Verdant','Jade','Forest','Wild'],
+  amber: ['Amber','Ember','Bronze','Autumn','Copper'],
+  jade: ['Jade','Verdant','Mist','Serpent','Emerald'],
+  umber: ['Umber','Earthen','Oak','Bark','Timber'],
+  rust: ['Rust','Ember','Iron','Scorched','Copper'],
+  violet: ['Violet','Twilight','Shadow','Amethyst','Dusk'],
+  sapphire: ['Sapphire','Azure','Storm','Frost','Tide'],
+  shadow: ['Shadow','Midnight','Void','Dusk','Onyx'],
+  slate: ['Slate','Storm','Ashen','Cloud','Grey'],
+  iron: ['Iron','Steel','Forge','Ash','Grim'],
+  teal: ['Teal','Tide','Wave','Storm','Deep'],
+  rose: ['Rose','Blush','Dawn','Petal','Bloom'],
+  bronze: ['Bronze','Copper','Autumn','Amber','Forge']
+};
+const ICON_WORDS = {
+  '🦁': ['Lions','Manes','Prides'],
+  '🐺': ['Wolves','Fangs','Packs'],
+  '🦅': ['Eagles','Talons','Wings'],
+  '🐉': ['Dragons','Wyrms','Scales'],
+  '🦂': ['Scorpions','Stingers','Claws'],
+  '🐍': ['Serpents','Vipers','Fangs'],
+  '🐻': ['Bears','Claws','Dens'],
+  '🦊': ['Foxes','Tails','Dens'],
+  '🦌': ['Stags','Antlers','Harts'],
+  '🐴': ['Steeds','Horses','Riders'],
+  '🦇': ['Bats','Wings','Shadows'],
+  '🦉': ['Owls','Watchers','Eyes'],
+  '🐗': ['Boars','Hogs','Tuskers'],
+  '🦚': ['Peacocks','Plumes','Feathers'],
+  '🦩': ['Flamingos','Plumes','Wings'],
+  '🐢': ['Tortoises','Shells','Turtles'],
+  '⚔️': ['Blades','Swords','Steel'],
+  '🛡️': ['Shields','Wardens','Guards'],
+  '🏹': ['Archers','Arrows','Bows'],
+  '⭐': ['Stars','Comets','Sparks'],
+  '🌙': ['Moons','Nightfall','Crescents'],
+  '☀️': ['Suns','Dawnbringers','Rays'],
+  '🔥': ['Flames','Embers','Blazes'],
+  '❄️': ['Frost','Snows','Icicles'],
+  '🍀': ['Clovers','Fortunes','Fields'],
+  '💀': ['Skulls','Reapers','Bones']
+};
+function generateBannerName(colorId, icon){
+  const colorWords = COLOR_WORDS[colorId] || ['Mystic'];
+  const iconWords = ICON_WORDS[icon] || ['Wanderers'];
+  const adj = colorWords[Math.floor(Math.random()*colorWords.length)];
+  const noun = iconWords[Math.floor(Math.random()*iconWords.length)];
+  return `${adj} ${noun}`;
+}
+
+/* ============================================================
    ISLAND MAP — one connected landmass, partitioned into regions
    (nearest-seed fill, like a Voronoi diagram) so absorbing an
    empire visibly recolors its territory instead of just merging
@@ -693,8 +816,32 @@ function computeSeedPositions(playerIds){
 let prevSeedLeader = {};
 let mapFlashes = {};
 
-function drawIslandMap(players){
-  const canvas = $('island-canvas');
+function drawWaveRings(ctx){
+  const cx = MAP_W/2, cy = MAP_H/2;
+  const baseR = Math.min(MAP_W,MAP_H)*0.42*1.16;
+  const ringCount = 5;
+  for(let ring=0; ring<ringCount; ring++){
+    const r = baseR + ring*22;
+    const opacity = 0.24 - ring*0.038;
+    if(opacity <= 0) continue;
+    ctx.beginPath();
+    const segments = 60;
+    for(let i=0;i<=segments;i++){
+      const angle = (i/segments)*Math.PI*2;
+      const wobble = Math.sin(angle*6 + ring*1.3) * 4;
+      const x = cx + Math.cos(angle)*(r+wobble)*1.28;
+      const y = cy + Math.sin(angle)*(r+wobble)*0.85;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(180,222,236,${opacity})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+function drawIslandMap(players, canvasId){
+  const canvas = $(canvasId || 'island-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,MAP_W,MAP_H);
 
@@ -703,6 +850,8 @@ function drawIslandMap(players){
   oceanGrad.addColorStop(1, '#0e2233');
   ctx.fillStyle = oceanGrad;
   ctx.fillRect(0,0,MAP_W,MAP_H);
+
+  drawWaveRings(ctx);
 
   const playerIds = Object.keys(players).sort((a,b)=>players[a].joinedAt-players[b].joinedAt);
   const seeds = computeSeedPositions(playerIds);
@@ -737,7 +886,7 @@ function drawIslandMap(players){
   return seeds;
 }
 
-function renderIslandLabels(seeds, players){
+function renderIslandLabels(seeds, players, labelsId, markerSize){
   const leaders = new Set(getLeaders(players));
   let html = '';
 
@@ -745,7 +894,7 @@ function renderIslandLabels(seeds, players){
     const leaderId = players[s.pid].leaderId || s.pid;
     if(prevSeedLeader[s.pid] !== undefined && prevSeedLeader[s.pid] !== leaderId && !mapFlashes[s.pid]){
       mapFlashes[s.pid] = true;
-      setTimeout(() => { delete mapFlashes[s.pid]; renderGame(); }, 900);
+      setTimeout(() => { delete mapFlashes[s.pid]; render(); }, 900);
     }
     prevSeedLeader[s.pid] = leaderId;
   });
@@ -754,7 +903,7 @@ function renderIslandLabels(seeds, players){
     const p = players[s.pid];
     const xPct = (s.x/MAP_W*100).toFixed(2), yPct = (s.y/MAP_H*100).toFixed(2);
     const active = roomState.currentTurnPlayerId === s.pid;
-    html += `<div class="map-marker ${active?'active':''}" style="left:${xPct}%;top:${yPct}%;">${flagHtml(p.bannerColor,p.bannerIcon,'md')}</div>`;
+    html += `<div class="map-marker ${active?'active':''}" style="left:${xPct}%;top:${yPct}%;">${flagHtml(p.bannerColor,p.bannerIcon,markerSize||'md')}</div>`;
   });
 
   seeds.filter(s => mapFlashes[s.pid]).forEach(s => {
@@ -762,7 +911,7 @@ function renderIslandLabels(seeds, players){
     html += `<div class="map-flash" style="left:${xPct}%;top:${yPct}%;"></div>`;
   });
 
-  $('island-labels').innerHTML = html;
+  $(labelsId || 'island-labels').innerHTML = html;
 }
 
 /* ============================================================
@@ -773,17 +922,170 @@ let myRoomCode = localStorage.getItem('empire_roomCode') || null;
 let myName = localStorage.getItem('empire_name') || '';
 let roomState = null;
 let roomRef = null;
+let scratchpadRef = null;
+let scratchpadState = null;
 let lobbySelectedOldest = null;
+let lobbySelectedCount = null;
 let lastTurnWasMine = false;
-let scratchpadDebounce = null;
 let customCategoryMode = [false, false];
 let finalizeAttempted = false;
+let endCheckAttempted = false;
+let seenLogKeys = null;
 let selectedGuessCategory = 0;
 let prevRoomStatus = null;
 
 const $ = id => document.getElementById(id);
 const screens = ['screen-home','screen-lobby','screen-submit','screen-game','screen-end'];
 function showScreen(id){ screens.forEach(s => $(s).style.display = (s===id ? 'block' : 'none')); }
+
+/* ============================================================
+   AMBIENT ADVENTURE MUSIC — generated in-browser (no audio file
+   needed), so it's copyright-safe and self-contained. Starts on
+   the player's first click (browsers require a user gesture
+   before audio can play) and can be muted at any time; the
+   choice is remembered across screens and reloads.
+   ============================================================ */
+let audioCtx = null;
+let musicMasterGain = null;
+let sfxGain = null;
+let musicTimers = [];
+let musicMuted = localStorage.getItem('empire_muted') === 'true';
+
+function updateMuteButton(){
+  const btn = $('btn-mute');
+  if(btn) btn.textContent = musicMuted ? '🔇' : '🔊';
+}
+updateMuteButton();
+
+function initAudio(){
+  if(audioCtx) return;
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }catch(e){ return; }
+  musicMasterGain = audioCtx.createGain();
+  musicMasterGain.gain.value = musicMuted ? 0 : 0.16;
+  musicMasterGain.connect(audioCtx.destination);
+  sfxGain = audioCtx.createGain();
+  sfxGain.gain.value = musicMuted ? 0 : 0.55;
+  sfxGain.connect(audioCtx.destination);
+  startAmbientMusic();
+}
+
+function startAmbientMusic(){
+  // Slow, soft pad chords for an adventurous/fantasy atmosphere
+  const chords = [
+    [110.00, 130.81, 164.81],   // A minor-ish
+    [98.00, 130.81, 164.81],    // G-ish
+    [87.31, 130.81, 174.61],    // F-ish
+    [110.00, 146.83, 174.61]    // A minor variant
+  ];
+  let chordIndex = 0;
+  function playChord(){
+    if(!audioCtx) return;
+    const freqs = chords[chordIndex % chords.length];
+    chordIndex++;
+    freqs.forEach(f => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = f;
+      const g = audioCtx.createGain();
+      g.gain.value = 0;
+      osc.connect(g).connect(musicMasterGain);
+      const now = audioCtx.currentTime;
+      g.gain.linearRampToValueAtTime(0.5, now + 2.2);
+      g.gain.linearRampToValueAtTime(0, now + 7.6);
+      osc.start(now);
+      osc.stop(now + 8);
+    });
+  }
+  playChord();
+  musicTimers.push(setInterval(playChord, 8000));
+
+  // Sparse plucked high notes for a little adventurous sparkle
+  const scale = [220.00, 246.94, 261.63, 293.66, 329.63, 392.00, 440.00];
+  function playPluck(){
+    if(!audioCtx) return;
+    if(Math.random() < 0.6){
+      const freq = scale[Math.floor(Math.random()*scale.length)] * (Math.random()<0.5?1:2);
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const g = audioCtx.createGain();
+      g.gain.value = 0;
+      osc.connect(g).connect(musicMasterGain);
+      const now = audioCtx.currentTime;
+      g.gain.linearRampToValueAtTime(0.22, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+      osc.start(now);
+      osc.stop(now + 1.4);
+    }
+    musicTimers.push(setTimeout(playPluck, 1200 + Math.random()*1800));
+  }
+  playPluck();
+}
+
+function setMusicMuted(muted){
+  musicMuted = muted;
+  localStorage.setItem('empire_muted', muted ? 'true' : 'false');
+  if(musicMasterGain){
+    const now = audioCtx.currentTime;
+    musicMasterGain.gain.linearRampToValueAtTime(muted ? 0 : 0.16, now + 0.3);
+  }
+  if(sfxGain){
+    const now = audioCtx.currentTime;
+    sfxGain.gain.linearRampToValueAtTime(muted ? 0 : 0.55, now + 0.1);
+  }
+  updateMuteButton();
+}
+
+// Short synthesized "clash" for a correct guess — a filtered noise
+// burst (impact) plus a couple of quick metallic overtones (ring).
+function playClashSound(){
+  if(!audioCtx || musicMuted) return;
+  const now = audioCtx.currentTime;
+
+  const bufferSize = Math.floor(audioCtx.sampleRate * 0.18);
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 3);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = 'highpass';
+  noiseFilter.frequency.value = 1800;
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0.4;
+  noise.connect(noiseFilter).connect(noiseGain).connect(sfxGain);
+  noise.start(now);
+
+  [1600, 2400, 3200].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.16/(i+1), now + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.45 + i*0.08);
+    osc.connect(g).connect(sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.55 + i*0.08);
+  });
+}
+
+$('btn-mute').addEventListener('click', () => {
+  if(!audioCtx) initAudio();
+  else if(audioCtx.state === 'suspended') audioCtx.resume();
+  setMusicMuted(!musicMuted);
+});
+
+// Browsers require a user gesture before audio can start — begin
+// on the player's first click anywhere, respecting a saved mute choice.
+document.addEventListener('click', function startOnFirstClick(){
+  initAudio();
+  document.removeEventListener('click', startOnFirstClick);
+}, { once:true });
 
 function genId(){ return 'p' + Math.random().toString(36).slice(2,10); }
 function genRoomCode(){
@@ -792,17 +1094,35 @@ function genRoomCode(){
   for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
   return s;
 }
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
 
 $('home-banner-color').innerHTML = BANNER_COLORS.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 $('home-banner-icon').innerHTML = BANNER_ICONS.map(i => `<option value="${i}">${i}</option>`).join('');
 $('home-banner-color').selectedIndex = Math.floor(Math.random()*BANNER_COLORS.length);
 $('home-banner-icon').selectedIndex = Math.floor(Math.random()*BANNER_ICONS.length);
+
+let currentBannerName = '';
 function updateHomeFlagPreview(){
   $('home-flag-preview').innerHTML = flagHtml($('home-banner-color').value, $('home-banner-icon').value, 'lg');
 }
-$('home-banner-color').addEventListener('change', updateHomeFlagPreview);
-$('home-banner-icon').addEventListener('change', updateHomeFlagPreview);
-updateHomeFlagPreview();
+function regenerateBannerName(){
+  currentBannerName = generateBannerName($('home-banner-color').value, $('home-banner-icon').value);
+  $('home-banner-name').textContent = `"${currentBannerName}"`;
+}
+function refreshHomeBanner(){
+  updateHomeFlagPreview();
+  regenerateBannerName();
+}
+$('home-banner-color').addEventListener('change', refreshHomeBanner);
+$('home-banner-icon').addEventListener('change', refreshHomeBanner);
+refreshHomeBanner();
 
 /* ============================================================
    HOME SCREEN
@@ -828,7 +1148,7 @@ $('btn-create').addEventListener('click', async () => {
       status: 'lobby',
       hostId: playerId,
       createdAt: Date.now(),
-      players: { [playerId]: { name, bannerColor, bannerIcon, isHost:true, joinedAt: Date.now() } }
+      players: { [playerId]: { name, bannerColor, bannerIcon, bannerName: currentBannerName, isHost:true, joinedAt: Date.now() } }
     };
     await db.ref('rooms/'+code).set(roomData);
     persistIdentity(code, playerId, name);
@@ -861,7 +1181,7 @@ $('btn-join').addEventListener('click', async () => {
       return;
     }
     const playerId = genId();
-    await db.ref(`rooms/${code}/players/${playerId}`).set({ name, bannerColor, bannerIcon, isHost:false, joinedAt: Date.now() });
+    await db.ref(`rooms/${code}/players/${playerId}`).set({ name, bannerColor, bannerIcon, bannerName: currentBannerName, isHost:false, joinedAt: Date.now() });
     persistIdentity(code, playerId, name);
     subscribeToRoom(code);
   }catch(e){
@@ -882,8 +1202,10 @@ function clearIdentity(){
   localStorage.removeItem('empire_name');
   myRoomCode = null; myPlayerId = null;
   if(roomRef) roomRef.off();
+  if(scratchpadRef) scratchpadRef.off();
   roomRef = null; roomState = null;
-  prevRoomStatus = null; prevSeedLeader = {}; mapFlashes = {};
+  scratchpadRef = null; scratchpadState = null;
+  prevRoomStatus = null; prevSeedLeader = {}; mapFlashes = {}; endCheckAttempted = false; seenLogKeys = null;
 }
 
 /* ============================================================
@@ -891,6 +1213,7 @@ function clearIdentity(){
    ============================================================ */
 function subscribeToRoom(code){
   if(roomRef) roomRef.off();
+  if(scratchpadRef) scratchpadRef.off();
   roomRef = db.ref('rooms/'+code);
   roomRef.on('value', snap => {
     if(!snap.exists()){
@@ -901,10 +1224,20 @@ function subscribeToRoom(code){
     }
     roomState = snap.val();
     if(prevRoomStatus === 'lobby' && roomState.status === 'submitting'){
-      triggerCeremony(roomState.categories || ['','']);
+      triggerCeremony(roomState.categories || []);
     }
     prevRoomStatus = roomState.status;
     render();
+  });
+
+  // Notes live on a completely separate top-level path so chatting
+  // never touches the same subtree as the game-state transactions
+  // (a shared subtree would cause those transactions to spuriously
+  // retry any time a note was sent).
+  scratchpadRef = db.ref('scratchpads/'+code);
+  scratchpadRef.on('value', snap => {
+    scratchpadState = snap.val() || {};
+    if(roomState && roomState.status === 'playing') renderGame();
   });
 }
 
@@ -916,9 +1249,13 @@ function render(){
   else if(roomState.status === 'ended') renderEnd();
 }
 
+function catCount(){
+  return roomState.categories ? roomState.categories.length : (roomState.categoryCount || 2);
+}
+
 function triggerCeremony(categories){
+  $('ceremony-categories').innerHTML = categories.map(c => `<div>📜 ${escapeHtml(c||'')}</div>`).join('');
   const el = $('ceremony-overlay');
-  $('ceremony-categories').innerHTML = `<div>📜 ${escapeHtml(categories[0]||'')}</div><div>📜 ${escapeHtml(categories[1]||'')}</div>`;
   el.style.display = 'flex';
   el.classList.remove('hide');
   clearTimeout(window.__ceremonyTimeout);
@@ -940,7 +1277,7 @@ function renderLobby(){
   $('lobby-players').innerHTML = players.map(([pid,p]) => `
     <div class="player-chip">
       ${flagHtml(p.bannerColor, p.bannerIcon, 'sm')}
-      <span class="name">${escapeHtml(p.name)}${pid===myPlayerId ? ' (you)' : ''}</span>
+      <span class="name">${escapeHtml(p.name)}${pid===myPlayerId ? ' (you)' : ''}${p.bannerName ? ` <span class="muted" style="font-style:italic;">"${escapeHtml(p.bannerName)}"</span>` : ''}</span>
       ${p.isHost ? '<span class="tag">👑 Host</span>' : ''}
     </div>
   `).join('');
@@ -948,7 +1285,19 @@ function renderLobby(){
   const isHost = roomState.hostId === myPlayerId;
   $('lobby-host-controls').style.display = isHost ? 'block' : 'none';
   $('lobby-guest-note').style.display = isHost ? 'none' : 'block';
-  document.querySelectorAll('.lobby-category-host-controls').forEach(el => el.style.display = isHost ? 'block' : 'none');
+  document.querySelectorAll('.lobby-category-host-controls').forEach(el => el.style.display = isHost ? (el.classList.contains('mode-toggle') ? 'flex' : 'block') : 'none');
+  document.querySelectorAll('.lobby-mode-guest-note').forEach(el => el.style.display = isHost ? 'none' : 'block');
+
+  if(roomState.categoryCount === undefined && isHost){
+    roomRef.child('categoryCount').set(2);
+    roomState.categoryCount = 2;
+  }
+  const count = roomState.categoryCount || 2;
+  lobbySelectedCount = count;
+  $('mode-btn-1').classList.toggle('active', count===1);
+  $('mode-btn-2').classList.toggle('active', count===2);
+  $('lobby-mode-guest-label').textContent = count===1 ? 'Quick (1 category)' : 'Full (2 categories)';
+  $('lobby-category2-section').style.display = count===2 ? 'block' : 'none';
 
   if(isHost && !roomState.proposedCategories){
     const c0 = randomCategoryName();
@@ -971,6 +1320,13 @@ function renderLobby(){
     $('btn-start').disabled = !enough;
     $('lobby-start-hint').textContent = enough ? '' : 'Need at least 3 players.';
   }
+}
+
+$('mode-btn-1').addEventListener('click', () => { setCategoryCount(1); });
+$('mode-btn-2').addEventListener('click', () => { setCategoryCount(2); });
+function setCategoryCount(n){
+  if(roomState.hostId !== myPlayerId) return;
+  roomRef.child('categoryCount').set(n);
 }
 
 $('lobby-oldest').addEventListener('change', e => { lobbySelectedOldest = e.target.value; });
@@ -1013,12 +1369,13 @@ document.querySelectorAll('[data-action="use-custom"]').forEach(btn => {
 $('btn-start').addEventListener('click', async () => {
   const players = Object.entries(roomState.players||{}).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
   if(players.length < 3) return;
-  const proposed = roomState.proposedCategories || [randomCategoryName(), randomCategoryName()];
+  const count = roomState.categoryCount || 2;
+  const proposed = (roomState.proposedCategories || [randomCategoryName(), randomCategoryName()]).slice(0, count);
   $('btn-start').disabled = true;
 
   const updatedPlayers = {};
   players.forEach(([pid,p]) => {
-    updatedPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, isHost: p.isHost, joinedAt: p.joinedAt, submitted: false };
+    updatedPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, bannerName: p.bannerName, isHost: p.isHost, joinedAt: p.joinedAt, submitted: false };
   });
 
   const oldestId = lobbySelectedOldest || players[0][0];
@@ -1028,15 +1385,15 @@ $('btn-start').addEventListener('click', async () => {
 
   await roomRef.update({
     status: 'submitting',
-    categories: [proposed[0], proposed[1]],
+    categories: proposed,
     categoryLists: null,
     players: updatedPlayers,
     turnOrder,
     currentTurnPlayerId: turnOrder[0],
     log: null,
-    scratchpads: null,
     winnerId: null
   });
+  db.ref('scratchpads/'+myRoomCode).remove();
 });
 
 $('btn-leave-lobby').addEventListener('click', async () => { await leaveRoom(); });
@@ -1055,19 +1412,24 @@ $('btn-leave-game').addEventListener('click', leaveRoom);
    ============================================================ */
 function renderSubmit(){
   showScreen('screen-submit');
-  prevSeedLeader = {}; mapFlashes = {};
+  prevSeedLeader = {}; mapFlashes = {}; endCheckAttempted = false; seenLogKeys = null;
   const players = roomState.players;
-  const categories = roomState.categories || ['Category 1','Category 2'];
+  const categories = roomState.categories || ['Category 1'];
+  const count = categories.length;
+
   $('submit-category-name-0').textContent = categories[0];
-  $('submit-category-name-1').textContent = categories[1];
+  $('submit-category2-label-wrap').style.display = count===2 ? 'block' : 'none';
+  $('submit-category2-input-wrap').style.display = count===2 ? 'block' : 'none';
+  if(count===2) $('submit-category-name-1').textContent = categories[1];
 
   const me = players[myPlayerId];
   const alreadySubmitted = me && me.submitted;
   $('submit-form').style.display = alreadySubmitted ? 'none' : 'block';
   $('submit-waiting').style.display = alreadySubmitted ? 'block' : 'none';
+  $('submit-my-answer1-wrap').style.display = count===2 ? 'block' : 'none';
   if(alreadySubmitted && me.identities){
     $('submit-my-answer-0').textContent = me.identities[0];
-    $('submit-my-answer-1').textContent = me.identities[1];
+    if(count===2) $('submit-my-answer-1').textContent = me.identities[1];
   }
 
   const sorted = Object.entries(players).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
@@ -1086,12 +1448,14 @@ function renderSubmit(){
 }
 
 $('btn-submit-identity').addEventListener('click', async () => {
+  const count = (roomState.categories || ['Category 1']).length;
   const val0 = $('submit-input-0').value.trim();
-  const val1 = $('submit-input-1').value.trim();
-  if(!val0 || !val1) return;
+  const val1 = count===2 ? $('submit-input-1').value.trim() : null;
+  if(!val0 || (count===2 && !val1)) return;
   $('btn-submit-identity').disabled = true;
   try{
-    await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).update({ identities: [val0, val1], submitted: true });
+    const identities = count===2 ? [val0, val1] : [val0];
+    await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).update({ identities, submitted: true });
   } finally {
     $('btn-submit-identity').disabled = false;
   }
@@ -1106,19 +1470,41 @@ async function finalizeSubmissions(){
       const players = room.players || {};
       const allSubmitted = Object.values(players).every(p => p.submitted);
       if(!allSubmitted) return room;
+      const count = (room.categories || ['Category 1']).length;
       Object.keys(players).forEach(pid => {
         players[pid].leaderId = pid;
-        players[pid].revealed = [false, false];
+        players[pid].revealed = new Array(count).fill(false);
       });
-      room.categoryLists = [
-        Object.values(players).map(p => p.identities[0]),
-        Object.values(players).map(p => p.identities[1])
-      ];
+      const lists = [];
+      for(let i=0;i<count;i++){
+        lists.push(shuffleArray(Object.values(players).map(p => p.identities[i])));
+      }
+      room.categoryLists = lists;
       room.status = 'playing';
       return room;
     });
   } finally {
     finalizeAttempted = false;
+  }
+}
+
+// Safety net: if every player already shares one leaderId but the room
+// is still marked 'playing' (e.g. a client missed the exact moment of
+// the final absorption), any client that notices can correct it. Uses
+// a plain read + update rather than another transaction on the same
+// room node, so it can't contend with (and stall) the guess transaction.
+async function finalizeWin(){
+  try{
+    const snap = await roomRef.once('value');
+    const room = snap.val();
+    if(!room || room.status !== 'playing') return;
+    const players = room.players || {};
+    const leaderIds = Object.values(players).map(p => p.leaderId);
+    const uniqueLeaders = new Set(leaderIds);
+    if(uniqueLeaders.size !== 1) return;
+    await roomRef.update({ status: 'ended', winnerId: leaderIds[0] });
+  } finally {
+    endCheckAttempted = false;
   }
 }
 
@@ -1147,27 +1533,55 @@ function nextLeaderInOrder(currentPid, players, turnOrder){
 function renderGame(){
   showScreen('screen-game');
   const players = roomState.players;
-  const categories = roomState.categories || ['Category 1','Category 2'];
-  const categoryLists = roomState.categoryLists || [[],[]];
+
+  const logEntriesEarly = roomState.log ? Object.entries(roomState.log).sort((a,b)=>a[1].ts-b[1].ts) : [];
+  if(seenLogKeys === null){
+    // First time seeing this game's log (fresh join/refresh) — record
+    // existing entries as already-seen so we don't replay old sounds.
+    seenLogKeys = new Set(logEntriesEarly.map(([key]) => key));
+  } else {
+    logEntriesEarly.forEach(([key, entry]) => {
+      if(!seenLogKeys.has(key)){
+        seenLogKeys.add(key);
+        if(entry.correct) playClashSound();
+      }
+    });
+  }
+
+  const uniqueLeaderCount = new Set(Object.values(players).map(p => p.leaderId)).size;
+  if(uniqueLeaderCount === 1 && !endCheckAttempted){
+    endCheckAttempted = true;
+    finalizeWin();
+    return; // roomState will update to 'ended' shortly and re-render via the listener
+  }
+
+  const categories = roomState.categories || ['Category 1'];
+  const count = categories.length;
+  const categoryLists = roomState.categoryLists || [[]];
   const myLeaderId = players[myPlayerId] ? players[myPlayerId].leaderId : myPlayerId;
   const iAmLeader = players[myPlayerId] && players[myPlayerId].leaderId === myPlayerId;
   const isMyTurn = roomState.currentTurnPlayerId === myPlayerId;
 
-  $('game-category-label-0').textContent = 'Category 1: ' + categories[0];
-  $('game-category-label-1').textContent = 'Category 2: ' + categories[1];
+  $('game-category-label-0').textContent = (count===2 ? 'Category 1: ' : 'Category: ') + categories[0];
+  $('game-category2-block').style.display = count===2 ? 'block' : 'none';
+  if(count===2) $('game-category-label-1').textContent = 'Category 2: ' + categories[1];
 
-  [0,1].forEach(ci => {
+  for(let ci=0; ci<count; ci++){
     $('game-readlist-'+ci).innerHTML = (categoryLists[ci]||[]).map(n => {
       const isRevealed = Object.values(players).some(p => p.revealed && p.revealed[ci] && p.identities && p.identities[ci]===n);
       return `<span class="revealed-chip" style="background:${isRevealed ? 'var(--emerald)' : '#b8a06b'};">${escapeHtml(n)}</span>`;
     }).join('');
-  });
+  }
 
   const myIdentities = (players[myPlayerId] && players[myPlayerId].identities) || ['—','—'];
-  $('game-my-cat-label-0').textContent = categories[0];
-  $('game-my-cat-label-1').textContent = categories[1];
+  $('identity-plural-y').textContent = count===2 ? 'ies' : 'y';
+  $('game-my-cat-label-0').textContent = count===2 ? categories[0] : categories[0];
   $('game-my-identity-0').textContent = myIdentities[0];
-  $('game-my-identity-1').textContent = myIdentities[1];
+  $('game-my-identity1-wrap').style.display = count===2 ? 'block' : 'none';
+  if(count===2){
+    $('game-my-cat-label-1').textContent = categories[1];
+    $('game-my-identity-1').textContent = myIdentities[1];
+  }
 
   const turnBanner = $('game-turn-banner');
   if(isMyTurn){
@@ -1181,6 +1595,7 @@ function renderGame(){
   lastTurnWasMine = isMyTurn;
 
   $('game-guess-card').style.display = (isMyTurn && iAmLeader) ? 'block' : 'none';
+  $('guess-category-wrap').style.display = count===2 ? 'block' : 'none';
   if(isMyTurn && iAmLeader){
     const otherLeaders = getLeaders(players).filter(lid => lid !== myPlayerId);
     $('guess-target').innerHTML = otherLeaders.map(lid => {
@@ -1191,8 +1606,12 @@ function renderGame(){
       return `<option value="${lid}">${players[lid].bannerIcon} ${colorName} — ${escapeHtml(leaderName)}'s ${tier.label} (${members.length} ${members.length===1?'ruler':'members'})</option>`;
     }).join('');
 
-    $('guess-category').innerHTML = `<option value="0">${escapeHtml(categories[0])}</option><option value="1">${escapeHtml(categories[1])}</option>`;
-    $('guess-category').value = String(selectedGuessCategory);
+    if(count===2){
+      $('guess-category').innerHTML = `<option value="0">${escapeHtml(categories[0])}</option><option value="1">${escapeHtml(categories[1])}</option>`;
+      $('guess-category').value = String(selectedGuessCategory);
+    } else {
+      selectedGuessCategory = 0;
+    }
     updateGuessNameOptions();
   }
 
@@ -1201,42 +1620,46 @@ function renderGame(){
   renderEmpireLegend(players);
 
   $('game-scratchpad-card').style.display = 'block';
-  const pad = (roomState.scratchpads && roomState.scratchpads[myLeaderId]) || '';
-  if(document.activeElement !== $('game-scratchpad')) $('game-scratchpad').value = pad;
+  const notesObj = (scratchpadState && scratchpadState[myLeaderId] && scratchpadState[myLeaderId].messages) || {};
+  const notesList = Object.values(notesObj).sort((a,b)=>a.ts-b.ts);
+  $('game-scratchpad-messages').innerHTML = notesList.length ? notesList.map(m => `
+    <div class="chat-msg ${m.authorId===myPlayerId?'mine':''}"><span class="author">${escapeHtml(m.authorName)}:</span>${escapeHtml(m.text)}</div>
+  `).join('') : '<p class="muted">No notes yet — share what your empire has ruled out.</p>';
+  const notesEl = $('game-scratchpad-messages');
+  notesEl.scrollTop = notesEl.scrollHeight;
 
-  const log = roomState.log ? Object.values(roomState.log).sort((a,b)=>a.ts-b.ts) : [];
+  const log = logEntriesEarly.map(([, entry]) => entry);
   $('game-log').innerHTML = log.length ? log.map(entry => `
     <div class="log-entry ${entry.correct ? (entry.absorbed ? 'absorbed' : 'correct') : 'wrong'}">
-      <strong>${escapeHtml(entry.actorName)}</strong> asked ${escapeHtml(entry.targetName)}'s empire about <em>${escapeHtml(entry.categoryName)}</em>: "Are you <em>${escapeHtml(entry.guessName)}</em>?" —
+      <strong>${escapeHtml(entry.actorName)}</strong> asked ${escapeHtml(entry.targetName)}'s empire${entry.categoryName ? ' about <em>'+escapeHtml(entry.categoryName)+'</em>' : ''}: "Are you <em>${escapeHtml(entry.guessName)}</em>?" —
       <strong>${entry.correct ? (entry.absorbed ? 'YES! Empire fully conquered.' : 'YES! One identity cracked.') : 'No.'}</strong>
     </div>
   `).join('') : '<p class="muted">No moves yet.</p>';
 }
 
 function renderEmpireLegend(players){
-  const categories = roomState.categories || ['Category 1','Category 2'];
+  const categories = roomState.categories || ['Category 1'];
+  const count = categories.length;
   const leaders = getLeaders(players);
   $('empire-legend').innerHTML = leaders.map(lid => {
     const leader = players[lid];
     const members = getEmpireMembers(lid, players);
     const tier = empireTier(members.length);
     const active = roomState.currentTurnPlayerId === lid;
-    const rev = leader.revealed || [false,false];
+    const rev = leader.revealed || new Array(count).fill(false);
     const memberFlags = members.filter(pid => pid !== lid).map(pid => {
       const p = players[pid];
       return `<span title="${escapeHtml(p.name)}">${flagHtml(p.bannerColor, p.bannerIcon, 'xs')}</span>`;
     }).join('');
+    const lockSpans = categories.map((c,i) => `<span>${rev[i] ? '🔓' : '🔒'} ${escapeHtml(c)}</span>`).join('');
     return `
       <div class="legend-row ${active?'active':''}">
         ${flagHtml(leader.bannerColor, leader.bannerIcon, 'sm')}
-        <span class="leader-name">${escapeHtml(leader.name)}${lid===myPlayerId?' (you)':''}</span>
+        <span class="leader-name">${escapeHtml(leader.name)}${lid===myPlayerId?' (you)':''}${leader.bannerName ? ` <span class="muted" style="font-style:italic;font-weight:400;">"${escapeHtml(leader.bannerName)}"</span>` : ''}</span>
         <span class="tier-tag" title="${tier.label}">${tier.icon} ${tier.label}</span>
         ${active ? '<span class="hint" style="margin:0;color:#2f6b4f;font-weight:700;">on the move</span>' : ''}
         <div class="legend-members">${memberFlags}</div>
-        <div class="lock-row">
-          <span>${rev[0] ? '🔓' : '🔒'} ${escapeHtml(categories[0])}</span>
-          <span>${rev[1] ? '🔓' : '🔒'} ${escapeHtml(categories[1])}</span>
-        </div>
+        <div class="lock-row">${lockSpans}</div>
       </div>
     `;
   }).join('');
@@ -1251,7 +1674,7 @@ $('guess-target').addEventListener('change', updateGuessNameOptions);
 function updateGuessNameOptions(){
   if(!roomState || roomState.status !== 'playing') return;
   const players = roomState.players;
-  const categoryLists = roomState.categoryLists || [[],[]];
+  const categoryLists = roomState.categoryLists || [[]];
   const ci = selectedGuessCategory;
   const remaining = (categoryLists[ci]||[]).filter(n => !Object.values(players).some(p => p.revealed && p.revealed[ci] && p.identities && p.identities[ci]===n));
   $('guess-name').innerHTML = remaining.sort().map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
@@ -1259,11 +1682,13 @@ function updateGuessNameOptions(){
 
 $('btn-ask').addEventListener('click', async () => {
   const targetLeaderId = $('guess-target').value;
-  const categoryIndex = parseInt($('guess-category').value, 10);
+  const count = (roomState.categories || ['Category 1']).length;
+  const categoryIndex = count===2 ? parseInt($('guess-category').value, 10) : 0;
   const guessName = $('guess-name').value;
   if(!targetLeaderId || !guessName) return;
   $('btn-ask').disabled = true;
-  const categories = roomState.categories || ['Category 1','Category 2'];
+  const categories = roomState.categories || ['Category 1'];
+  const logKey = db.ref(`rooms/${myRoomCode}/log`).push().key;
 
   try{
     await roomRef.transaction(room => {
@@ -1275,15 +1700,14 @@ $('btn-ask').addEventListener('click', async () => {
       const correct = target.identities[categoryIndex] === guessName;
 
       room.log = room.log || {};
-      const logKey = 'l' + Date.now() + Math.floor(Math.random()*1000);
       let absorbed = false;
 
       if(correct){
-        target.revealed = target.revealed || [false,false];
+        target.revealed = target.revealed || new Array(categories.length).fill(false);
         target.revealed[categoryIndex] = true;
         room.currentTurnPlayerId = myPlayerId;
 
-        if(target.revealed[0] && target.revealed[1]){
+        if(target.revealed.every(Boolean)){
           absorbed = true;
           Object.keys(players).forEach(pid => {
             if(players[pid].leaderId === targetLeaderId){
@@ -1306,7 +1730,7 @@ $('btn-ask').addEventListener('click', async () => {
         actorName: players[myPlayerId].name,
         targetId: targetLeaderId,
         targetName: target.name,
-        categoryName: categories[categoryIndex],
+        categoryName: categories.length===2 ? categories[categoryIndex] : null,
         guessName,
         correct,
         absorbed
@@ -1318,15 +1742,20 @@ $('btn-ask').addEventListener('click', async () => {
   }
 });
 
-$('game-scratchpad').addEventListener('input', e => {
+$('btn-scratchpad-send').addEventListener('click', sendScratchpadMessage);
+$('game-scratchpad-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); sendScratchpadMessage(); }
+});
+function sendScratchpadMessage(){
+  const input = $('game-scratchpad-input');
+  const text = input.value.trim();
+  if(!text) return;
   const players = roomState.players;
   const myLeaderId = players[myPlayerId] ? players[myPlayerId].leaderId : myPlayerId;
-  clearTimeout(scratchpadDebounce);
-  const val = e.target.value;
-  scratchpadDebounce = setTimeout(() => {
-    db.ref(`rooms/${myRoomCode}/scratchpads/${myLeaderId}`).set(val);
-  }, 400);
-});
+  const msgRef = db.ref(`scratchpads/${myRoomCode}/${myLeaderId}/messages`).push();
+  msgRef.set({ text, authorName: players[myPlayerId].name, authorId: myPlayerId, ts: Date.now() });
+  input.value = '';
+}
 
 /* ============================================================
    END SCREEN
@@ -1334,18 +1763,34 @@ $('game-scratchpad').addEventListener('input', e => {
 function renderEnd(){
   showScreen('screen-end');
   const players = roomState.players;
-  const categories = roomState.categories || ['Category 1','Category 2'];
+  const categories = roomState.categories || ['Category 1'];
   const winner = players[roomState.winnerId];
+
+  $('end-winner-flag').innerHTML = winner ? flagHtml(winner.bannerColor, winner.bannerIcon, 'xl') : '';
   $('end-winner-name').textContent = winner ? winner.name : '—';
+  $('end-winner-banner-name').textContent = (winner && winner.bannerName) ? `"${winner.bannerName}"` : '';
+
+  const seeds = drawIslandMap(players, 'island-canvas-end');
+  // Every player gets a flag scattered at their home position on the
+  // final map — the winner's stands large, everyone else's smaller.
+  $('island-labels-end').innerHTML = seeds.map(s => {
+    const p = players[s.pid];
+    const isWinner = s.pid === roomState.winnerId;
+    const xPct = (s.x/MAP_W*100).toFixed(2), yPct = (s.y/MAP_H*100).toFixed(2);
+    return `<div class="map-marker ${isWinner?'active':''}" style="left:${xPct}%;top:${yPct}%;">${flagHtml(p.bannerColor, p.bannerIcon, isWinner?'lg':'sm')}</div>`;
+  }).join('');
 
   const sorted = Object.entries(players).sort((a,b)=>a[1].joinedAt-b[1].joinedAt);
-  $('end-reveal-list').innerHTML = sorted.map(([pid,p]) => `
-    <div class="player-chip">
-      ${flagHtml(p.bannerColor, p.bannerIcon, 'sm')}
-      <span class="name">${escapeHtml(p.name)}</span>
-      <span class="tag" style="color:#5b3a1c;">${escapeHtml(categories[0])}: ${escapeHtml((p.identities||[])[0]||'')} · ${escapeHtml(categories[1])}: ${escapeHtml((p.identities||[])[1]||'')}</span>
-    </div>
-  `).join('');
+  $('end-reveal-list').innerHTML = sorted.map(([pid,p]) => {
+    const idents = categories.map((c,i) => `${escapeHtml(c)}: ${escapeHtml((p.identities||[])[i]||'')}`).join(' · ');
+    return `
+      <div class="player-chip">
+        ${flagHtml(p.bannerColor, p.bannerIcon, 'sm')}
+        <span class="name">${escapeHtml(p.name)}${p.bannerName ? ` <span class="muted" style="font-style:italic;">"${escapeHtml(p.bannerName)}"</span>` : ''}</span>
+        <span class="tag" style="color:#5b3a1c;">${idents}</span>
+      </div>
+    `;
+  }).join('');
 
   const isHost = roomState.hostId === myPlayerId;
   $('end-host-controls').style.display = isHost ? 'block' : 'none';
@@ -1355,7 +1800,7 @@ $('btn-play-again').addEventListener('click', async () => {
   const players = roomState.players;
   const resetPlayers = {};
   Object.entries(players).forEach(([pid,p]) => {
-    resetPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, isHost: p.isHost, joinedAt: p.joinedAt };
+    resetPlayers[pid] = { name: p.name, bannerColor: p.bannerColor, bannerIcon: p.bannerIcon, bannerName: p.bannerName, isHost: p.isHost, joinedAt: p.joinedAt };
   });
   await roomRef.update({
     status: 'lobby',
@@ -1363,12 +1808,13 @@ $('btn-play-again').addEventListener('click', async () => {
     categories: null,
     categoryLists: null,
     proposedCategories: null,
+    categoryCount: null,
     turnOrder: null,
     currentTurnPlayerId: null,
     log: null,
-    scratchpads: null,
     winnerId: null
   });
+  db.ref('scratchpads/'+myRoomCode).remove();
 });
 
 $('btn-home-from-end').addEventListener('click', async () => { await leaveRoom(); });
