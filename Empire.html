@@ -426,7 +426,7 @@
 <body>
 <button id="btn-mute" class="mute-btn" title="Toggle music">🔊</button>
 
-<audio id="main-music" src="adventure-loop.mp3" loop preload="auto"></audio>
+<audio id="main-music" src="adventure-loop.m4a" loop preload="auto"></audio>
 <audio id="intro-music" src="epic-adventure.mp3" preload="auto"></audio>
 
 <div id="loading-screen">
@@ -1028,7 +1028,7 @@ const screens = ['screen-home','screen-lobby','screen-submit','screen-game','scr
 function showScreen(id){ screens.forEach(s => $(s).style.display = (s===id ? 'block' : 'none')); }
 
 /* ============================================================
-   AUDIO — main music is a real file (adventure-loop.mp3), looped,
+   AUDIO — main music is a real file (adventure-loop.m4a), looped,
    controlled by the mute button. The clash sound effect is still
    generated in-browser (no file provided for it). Browsers require
    a user gesture before any audio can play; see unlockAudio() below.
