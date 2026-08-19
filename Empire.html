@@ -1055,15 +1055,18 @@ function initSfxContext(){
 }
 
 // Browsers block audio.play() until a real user gesture has occurred.
-// Playing-then-immediately-pausing each element during that first
-// gesture "unlocks" them so later play()/pause() calls work freely.
-function unlockAudioElements(){
+// Only main-music needs pre-authorizing here: it's actually started
+// later (after the intro finishes, outside this click's call stack),
+// so it must be "unlocked" now. intro-music is played directly within
+// a real click handler, so it needs no such trick — doing the same
+// play-then-pause dance to it here would race against its real play()
+// call and could silently pause it right after it starts.
+function unlockMainMusicElement(){
   if(audioUnlocked) return;
   audioUnlocked = true;
-  [$('main-music'), $('intro-music')].forEach(el => {
-    el.muted = musicMuted;
-    el.play().then(() => el.pause()).catch(() => {});
-  });
+  const m = $('main-music');
+  m.muted = musicMuted;
+  m.play().then(() => m.pause()).catch(() => {});
 }
 
 function setMusicMuted(muted){
@@ -1117,7 +1120,6 @@ function playClashSound(){
 $('btn-mute').addEventListener('click', () => {
   initSfxContext();
   if(audioCtx.state === 'suspended') audioCtx.resume();
-  unlockAudioElements();
   setMusicMuted(!musicMuted);
 });
 
@@ -1136,14 +1138,14 @@ function shouldShowIntro(){
 function startIntroSequence(){
   sessionStorage.setItem(INTRO_SEEN_KEY, 'true');
   initSfxContext();
-  unlockAudioElements();
+  unlockMainMusicElement();
 
   $('loading-tap-prompt').style.display = 'none';
   $('loading-stage').classList.add('playing');
 
   const introAudio = $('intro-music');
-  introAudio.currentTime = 0;
   introAudio.muted = musicMuted;
+  introAudio.currentTime = 0;
   introAudio.play().catch(() => {});
 
   setTimeout(finishIntro, 5000);
@@ -1175,7 +1177,7 @@ function startMainMusic(){
     // click anywhere, same gesture-unlock pattern as before.
     document.addEventListener('click', function startOnFirstClick(){
       initSfxContext();
-      unlockAudioElements();
+      audioUnlocked = true;
       startMainMusic();
       document.removeEventListener('click', startOnFirstClick);
     }, { once:true });
