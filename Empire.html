@@ -768,9 +768,10 @@ const BANNER_COLORS = [
   { id:'iron', name:'Iron Grey', hex:'#55534a' },
   { id:'teal', name:'Teal', hex:'#1f6f6b' },
   { id:'rose', name:'Rose', hex:'#c9607a' },
-  { id:'bronze', name:'Bronze', hex:'#8f6b3a' }
+  { id:'bronze', name:'Bronze', hex:'#8f6b3a' },
+  { id:'black', name:'Black', hex:'#161616' }
 ];
-const BANNER_ICONS = ['🦁','🐺','🦅','🐉','🦂','🐍','🐻','🦊','🦌','🐴','🦇','🦉','🐗','🦚','🦩','🐢','⚔️','🛡️','🏹','⭐','🌙','☀️','🔥','❄️','🍀','💀'];
+const BANNER_ICONS = ['🦁','🐺','🦅','🐉','🦂','🐍','🐻','🦊','🦌','🐴','🦇','🦉','🐗','🦚','🦩','🐢','⚔️','🛡️','🏹','⭐','🌙','☀️','🔥','❄️','🍀','💀','🥔','🧀','🦆','🐸','🦥','🐹','🦑','🐌'];
 
 function getBannerColor(id){
   return (BANNER_COLORS.find(c => c.id === id) || BANNER_COLORS[0]);
@@ -788,53 +789,64 @@ function flagHtml(colorId, icon, size){
 
 /* ============================================================
    BANNER NAME GENERATOR — combines a color-flavored word with an
-   emblem-flavored word (e.g. Crimson + 🐗 -> "Fire Hogs")
+   emblem-flavored word (e.g. Crimson + 🐗 -> "Fire Hogs"). Each
+   list mixes serious epic-sounding options with sillier ones for
+   variety.
    ============================================================ */
 const COLOR_WORDS = {
-  crimson: ['Crimson','Blood','Fire','Ember','Scarlet'],
-  steel: ['Steel','Iron','Storm','Ashen','Grey'],
-  gold: ['Golden','Sun','Amber','Radiant','Gilded'],
-  emerald: ['Emerald','Verdant','Jade','Forest','Wild'],
-  amber: ['Amber','Ember','Bronze','Autumn','Copper'],
-  jade: ['Jade','Verdant','Mist','Serpent','Emerald'],
-  umber: ['Umber','Earthen','Oak','Bark','Timber'],
-  rust: ['Rust','Ember','Iron','Scorched','Copper'],
-  violet: ['Violet','Twilight','Shadow','Amethyst','Dusk'],
-  sapphire: ['Sapphire','Azure','Storm','Frost','Tide'],
-  shadow: ['Shadow','Midnight','Void','Dusk','Onyx'],
-  slate: ['Slate','Storm','Ashen','Cloud','Grey'],
-  iron: ['Iron','Steel','Forge','Ash','Grim'],
-  teal: ['Teal','Tide','Wave','Storm','Deep'],
-  rose: ['Rose','Blush','Dawn','Petal','Bloom'],
-  bronze: ['Bronze','Copper','Autumn','Amber','Forge']
+  crimson: ['Crimson','Blood','Fire','Ember','Scarlet','Ketchup'],
+  steel: ['Steel','Iron','Storm','Ashen','Grey','Robo'],
+  gold: ['Golden','Sun','Amber','Radiant','Gilded','Shiny'],
+  emerald: ['Emerald','Verdant','Jade','Forest','Wild','Broccoli'],
+  amber: ['Amber','Ember','Bronze','Autumn','Copper','Honey'],
+  jade: ['Jade','Verdant','Mist','Serpent','Emerald','Pickle'],
+  umber: ['Umber','Earthen','Oak','Bark','Timber','Muddy'],
+  rust: ['Rust','Ember','Iron','Scorched','Copper','Squeaky'],
+  violet: ['Violet','Twilight','Shadow','Amethyst','Dusk','Grape'],
+  sapphire: ['Sapphire','Azure','Storm','Frost','Tide','Blueberry'],
+  shadow: ['Shadow','Midnight','Void','Dusk','Onyx','Spooky'],
+  slate: ['Slate','Storm','Ashen','Cloud','Grey','Foggy'],
+  iron: ['Iron','Steel','Forge','Ash','Grim','Clanky'],
+  teal: ['Teal','Tide','Wave','Storm','Deep','Swampy'],
+  rose: ['Rose','Blush','Dawn','Petal','Bloom','Bubblegum'],
+  bronze: ['Bronze','Copper','Autumn','Amber','Forge','Penny'],
+  black: ['Black','Midnight','Onyx','Raven','Obsidian','Licorice']
 };
 const ICON_WORDS = {
-  '🦁': ['Lions','Manes','Prides'],
-  '🐺': ['Wolves','Fangs','Packs'],
-  '🦅': ['Eagles','Talons','Wings'],
-  '🐉': ['Dragons','Wyrms','Scales'],
-  '🦂': ['Scorpions','Stingers','Claws'],
-  '🐍': ['Serpents','Vipers','Fangs'],
-  '🐻': ['Bears','Claws','Dens'],
-  '🦊': ['Foxes','Tails','Dens'],
-  '🦌': ['Stags','Antlers','Harts'],
-  '🐴': ['Steeds','Horses','Riders'],
-  '🦇': ['Bats','Wings','Shadows'],
-  '🦉': ['Owls','Watchers','Eyes'],
-  '🐗': ['Boars','Hogs','Tuskers'],
-  '🦚': ['Peacocks','Plumes','Feathers'],
-  '🦩': ['Flamingos','Plumes','Wings'],
-  '🐢': ['Tortoises','Shells','Turtles'],
-  '⚔️': ['Blades','Swords','Steel'],
-  '🛡️': ['Shields','Wardens','Guards'],
-  '🏹': ['Archers','Arrows','Bows'],
-  '⭐': ['Stars','Comets','Sparks'],
-  '🌙': ['Moons','Nightfall','Crescents'],
-  '☀️': ['Suns','Dawnbringers','Rays'],
-  '🔥': ['Flames','Embers','Blazes'],
-  '❄️': ['Frost','Snows','Icicles'],
-  '🍀': ['Clovers','Fortunes','Fields'],
-  '💀': ['Skulls','Reapers','Bones']
+  '🦁': ['Lions','Manes','Prides','Meowers'],
+  '🐺': ['Wolves','Fangs','Packs','Howlers'],
+  '🦅': ['Eagles','Talons','Wings','Screechers'],
+  '🐉': ['Dragons','Wyrms','Scales','Toasters'],
+  '🦂': ['Scorpions','Stingers','Claws','Pinchers'],
+  '🐍': ['Serpents','Vipers','Fangs','Noodles'],
+  '🐻': ['Bears','Claws','Dens','Huggers'],
+  '🦊': ['Foxes','Tails','Dens','Sneaks'],
+  '🦌': ['Stags','Antlers','Harts','Prancers'],
+  '🐴': ['Steeds','Horses','Riders','Neighbors'],
+  '🦇': ['Bats','Wings','Shadows','Squeakers'],
+  '🦉': ['Owls','Watchers','Eyes','Hooters'],
+  '🐗': ['Boars','Hogs','Tuskers','Snorters'],
+  '🦚': ['Peacocks','Plumes','Feathers','Show-offs'],
+  '🦩': ['Flamingos','Plumes','Wings','Pinkies'],
+  '🐢': ['Tortoises','Shells','Turtles','Slowpokes'],
+  '⚔️': ['Blades','Swords','Steel','Choppers'],
+  '🛡️': ['Shields','Wardens','Guards','Blockers'],
+  '🏹': ['Archers','Arrows','Bows','Twangers'],
+  '⭐': ['Stars','Comets','Sparks','Twinklers'],
+  '🌙': ['Moons','Nightfall','Crescents','Howlers'],
+  '☀️': ['Suns','Dawnbringers','Rays','Sunburns'],
+  '🔥': ['Flames','Embers','Blazes','Hotheads'],
+  '❄️': ['Frost','Snows','Icicles','Brrrs'],
+  '🍀': ['Clovers','Fortunes','Fields','Luckies'],
+  '💀': ['Skulls','Reapers','Bones','Bonebags'],
+  '🥔': ['Potatoes','Spuds','Taters','Mashers'],
+  '🧀': ['Cheeses','Wedges','Curds','Stinkers'],
+  '🦆': ['Ducks','Quackers','Waddlers','Bills'],
+  '🐸': ['Frogs','Croakers','Hoppers','Ribbits'],
+  '🦥': ['Sloths','Snoozers','Loafers','Dozers'],
+  '🐹': ['Hamsters','Squeakers','Nibblers','Cheeks'],
+  '🦑': ['Squids','Tentacles','Krakens','Inklings'],
+  '🐌': ['Snails','Slugs','Shellbacks','Dawdlers']
 };
 function generateBannerName(colorId, icon){
   const colorWords = COLOR_WORDS[colorId] || ['Mystic'];
@@ -868,19 +880,15 @@ function seededRandom(seed){
 }
 
 // Fixed island coastline — stable across every game, doesn't regenerate.
-const ISLAND_POLY = (function(){
-  const rng = seededRandom(90210);
-  const cx = MAP_W/2, cy = MAP_H/2;
-  const baseR = Math.min(MAP_W,MAP_H)*0.42;
-  const n = 30;
-  const pts = [];
-  for(let i=0;i<n;i++){
-    const angle = (i/n)*Math.PI*2;
-    const r = baseR * (0.78 + rng()*0.42);
-    pts.push([cx + Math.cos(angle)*r*1.28, cy + Math.sin(angle)*r*0.85]);
-  }
-  return pts;
-})();
+// Island coastline, mountains, forests, and terrain blotches are all
+// generated once per GAME (seeded from the room code, so every player
+// in that room sees the identical map) rather than once per page load.
+// ensureMapFeatures() populates these on first use and caches them.
+let ISLAND_POLY = [];
+let MOUNTAIN_CLUSTERS = [];
+let FOREST_CLUSTERS = [];
+let TERRAIN_BLOTCHES = [];
+let mapFeaturesSeedKey = null;
 
 function pointInPolygon(x,y,poly){
   let inside=false;
@@ -891,6 +899,251 @@ function pointInPolygon(x,y,poly){
   }
   return inside;
 }
+
+function ensureMapFeatures(seedKey){
+  if(mapFeaturesSeedKey === seedKey) return; // already generated for this game
+  mapFeaturesSeedKey = seedKey;
+
+  const cx = MAP_W/2, cy = MAP_H/2;
+
+  // Coastline
+  const islandRng = seededRandom(hashStr(seedKey + '_island'));
+  const baseR = Math.min(MAP_W,MAP_H)*0.42;
+  const n = 30;
+  const pts = [];
+  for(let i=0;i<n;i++){
+    const angle = (i/n)*Math.PI*2;
+    const r = baseR * (0.78 + islandRng()*0.42);
+    pts.push([cx + Math.cos(angle)*r*1.28, cy + Math.sin(angle)*r*0.85]);
+  }
+  ISLAND_POLY = pts;
+
+  // Mountain clusters
+  const mountainRng = seededRandom(hashStr(seedKey + '_mountains'));
+  const mClusters = [];
+  for(let c=0; c<3; c++){
+    let x, y, tries=0;
+    do{
+      x = 70 + mountainRng()*(MAP_W-140);
+      y = 60 + mountainRng()*(MAP_H-120);
+      tries++;
+    } while(!pointInPolygon(x,y,ISLAND_POLY) && tries<25);
+    const peakCount = 2 + Math.floor(mountainRng()*2);
+    const peaks = [];
+    for(let p=0;p<peakCount;p++){
+      peaks.push({ dx:(p-(peakCount-1)/2)*15 + (mountainRng()-0.5)*6, dy:(mountainRng()-0.5)*5, size:11+mountainRng()*6 });
+    }
+    mClusters.push({ x, y, peaks });
+  }
+  MOUNTAIN_CLUSTERS = mClusters;
+
+  // Forest clusters
+  const forestRng = seededRandom(hashStr(seedKey + '_forests'));
+  const fClusters = [];
+  for(let c=0; c<3; c++){
+    let x, y, tries=0;
+    do{
+      x = 50 + forestRng()*(MAP_W-100);
+      y = 50 + forestRng()*(MAP_H-100);
+      tries++;
+    } while(!pointInPolygon(x,y,ISLAND_POLY) && tries<25);
+    const treeCount = 4 + Math.floor(forestRng()*3);
+    const trees = [];
+    for(let t=0;t<treeCount;t++){
+      trees.push({ dx:(forestRng()-0.5)*28, dy:(forestRng()-0.5)*18, size:6+forestRng()*4 });
+    }
+    fClusters.push({ x, y, trees });
+  }
+  FOREST_CLUSTERS = fClusters;
+
+  // Terrain texture blotches (depend on the island shape, so generated here too)
+  const blotchRng = seededRandom(hashStr(seedKey + '_blotches'));
+  const blotches = [];
+  let attempts = 0;
+  while(blotches.length < 90 && attempts < 600){
+    attempts++;
+    const x = blotchRng()*MAP_W, y = blotchRng()*MAP_H;
+    if(!pointInPolygon(x,y,ISLAND_POLY)) continue;
+    blotches.push({ x, y, r: 14 + blotchRng()*28, dark: blotchRng() < 0.55, a: 0.035 + blotchRng()*0.05 });
+  }
+  TERRAIN_BLOTCHES = blotches;
+}
+
+// Generates a winding chain of waypoints between two points — each
+// interior point nudged perpendicular to the straight line, alternating
+// sides, so the resulting path has several natural turns instead of one
+// smooth arc. Deterministic per seedStr, so the same pair always winds
+// the same way across renders.
+function generateWaypoints(x0, y0, x1, y1, segments, seedStr, maxOffset){
+  const rng = seededRandom(hashStr(seedStr));
+  const dx = x1-x0, dy = y1-y0;
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const perpX = -dy/len, perpY = dx/len;
+  const points = [{ x:x0, y:y0 }];
+  for(let i=1;i<segments;i++){
+    const t = i/segments;
+    const baseX = x0 + dx*t, baseY = y0 + dy*t;
+    const dir = (i % 2 === 0) ? 1 : -1;
+    const offset = dir * (maxOffset*0.35 + rng()*maxOffset*0.65);
+    points.push({ x: baseX + perpX*offset, y: baseY + perpY*offset });
+  }
+  points.push({ x:x1, y:y1 });
+  return points;
+}
+
+// Strokes a smooth curve through a chain of waypoints (quadratic
+// Bezier through consecutive midpoints — the standard technique for a
+// natural multi-point curve without sharp polygon corners).
+function strokeSmoothPath(ctx, points){
+  if(points.length < 2) return;
+  ctx.moveTo(points[0].x, points[0].y);
+  if(points.length === 2){
+    ctx.lineTo(points[1].x, points[1].y);
+    return;
+  }
+  for(let i=1;i<points.length-1;i++){
+    const midX = (points[i].x + points[i+1].x)/2;
+    const midY = (points[i].y + points[i+1].y)/2;
+    ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+  }
+  const secondLast = points[points.length-2], last = points[points.length-1];
+  ctx.quadraticCurveTo(secondLast.x, secondLast.y, last.x, last.y);
+}
+
+// Fixed parchment grain speckle — subtle aged-paper texture, stable
+// across renders so it doesn't "sparkle" on every redraw.
+const PARCHMENT_GRAIN = (function(){
+  const rng = seededRandom(31415);
+  const specks = [];
+  for(let i=0;i<380;i++){
+    specks.push({
+      x: rng()*MAP_W, y: rng()*MAP_H,
+      r: 0.5 + rng()*1.3,
+      a: 0.02 + rng()*0.05,
+      dark: rng() < 0.6
+    });
+  }
+  return specks;
+})();
+
+// Fixed parchment stains — larger, very faint aged-paper marks that
+// don't care about land vs. sea, like a real old map would have.
+const PARCHMENT_STAINS = (function(){
+  const rng = seededRandom(99887);
+  const stains = [];
+  for(let i=0;i<5;i++){
+    stains.push({ x: rng()*MAP_W, y: rng()*MAP_H, r: 45 + rng()*70, a: 0.035 + rng()*0.045 });
+  }
+  return stains;
+})();
+
+function drawMountains(ctx){
+  MOUNTAIN_CLUSTERS.forEach(cluster => {
+    cluster.peaks.forEach(peak => {
+      const px = cluster.x + peak.dx, py = cluster.y + peak.dy, s = peak.size;
+      ctx.beginPath();
+      ctx.moveTo(px, py + s*0.6);
+      ctx.lineTo(px - s*0.55, py + s*0.6);
+      ctx.lineTo(px, py - s*0.7);
+      ctx.lineTo(px + s*0.55, py + s*0.6);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(88,78,68,0.6)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(48,40,32,0.55)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // shaded side for a bit of depth
+      ctx.beginPath();
+      ctx.moveTo(px, py - s*0.7);
+      ctx.lineTo(px + s*0.55, py + s*0.6);
+      ctx.lineTo(px, py + s*0.6);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(40,32,24,0.25)';
+      ctx.fill();
+      // snow cap
+      ctx.beginPath();
+      ctx.moveTo(px, py - s*0.7);
+      ctx.lineTo(px - s*0.18, py - s*0.35);
+      ctx.lineTo(px + s*0.18, py - s*0.35);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fill();
+    });
+    // scree dots scattered at the base
+    const rng = seededRandom(hashStr(Math.round(cluster.x)+'_'+Math.round(cluster.y)));
+    for(let i=0;i<5;i++){
+      const dx = (rng()-0.5)*44, dy = 6+rng()*9;
+      ctx.beginPath();
+      ctx.arc(cluster.x+dx, cluster.y+dy, 1.4, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(70,60,50,0.35)';
+      ctx.fill();
+    }
+  });
+}
+
+function drawForests(ctx){
+  FOREST_CLUSTERS.forEach(cluster => {
+    cluster.trees.forEach(t => {
+      const px = cluster.x+t.dx, py = cluster.y+t.dy, s = t.size;
+      ctx.beginPath();
+      ctx.moveTo(px, py-s);
+      ctx.lineTo(px-s*0.5, py+s*0.3);
+      ctx.lineTo(px+s*0.5, py+s*0.3);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(42,68,38,0.6)';
+      ctx.fill();
+      ctx.fillStyle = 'rgba(58,40,24,0.55)';
+      ctx.fillRect(px-0.8, py+s*0.3, 1.6, s*0.35);
+    });
+  });
+}
+
+function drawParchmentGrain(ctx){
+  PARCHMENT_GRAIN.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fillStyle = s.dark ? `rgba(40,30,15,${s.a})` : `rgba(255,245,220,${s.a})`;
+    ctx.fill();
+  });
+}
+
+function drawTerrainTexture(ctx){
+  TERRAIN_BLOTCHES.forEach(b => {
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    if(b.dark){
+      grad.addColorStop(0, `rgba(30,22,12,${b.a})`);
+      grad.addColorStop(1, 'rgba(30,22,12,0)');
+    } else {
+      grad.addColorStop(0, `rgba(255,248,225,${b.a})`);
+      grad.addColorStop(1, 'rgba(255,248,225,0)');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawStains(ctx){
+  PARCHMENT_STAINS.forEach(s => {
+    const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+    grad.addColorStop(0, `rgba(90,60,30,${s.a})`);
+    grad.addColorStop(1, 'rgba(90,60,30,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawVignette(ctx){
+  const grad = ctx.createRadialGradient(MAP_W/2, MAP_H/2, MAP_H*0.25, MAP_W/2, MAP_H/2, MAP_H*0.78);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(20,14,8,0.4)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,MAP_W,MAP_H);
+}
+
 
 function computeSeedPositions(playerIds){
   const n = playerIds.length;
@@ -940,7 +1193,102 @@ function drawWaveRings(ctx){
   }
 }
 
+function computeRoadNetwork(seeds){
+  const n = seeds.length;
+  if(n < 2) return [];
+
+  function distSq(i,j){
+    const dx = seeds[i].x-seeds[j].x, dy = seeds[i].y-seeds[j].y;
+    return dx*dx + dy*dy;
+  }
+  function edgeKey(a,b){ return a<b ? a+'_'+b : b+'_'+a; }
+
+  const edgeSet = new Set();
+  const edges = [];
+  function addEdge(a,b){
+    const k = edgeKey(a,b);
+    if(!edgeSet.has(k)){ edgeSet.add(k); edges.push([a,b]); }
+  }
+
+  // 1) Minimum spanning tree first, to guarantee every player is
+  // reachable by at least one road.
+  const inTree = new Array(n).fill(false);
+  const minDist = new Array(n).fill(Infinity);
+  const parent = new Array(n).fill(-1);
+  minDist[0] = 0;
+  for(let iter=0; iter<n; iter++){
+    let u = -1;
+    for(let i=0;i<n;i++){
+      if(!inTree[i] && (u===-1 || minDist[i] < minDist[u])) u = i;
+    }
+    if(u===-1) break;
+    inTree[u] = true;
+    if(parent[u] !== -1) addEdge(parent[u], u);
+    for(let v=0; v<n; v++){
+      if(!inTree[v]){
+        const d = distSq(u,v);
+        if(d < minDist[v]){ minDist[v] = d; parent[v] = u; }
+      }
+    }
+  }
+
+  // 2) Layer each point's nearest neighbor(s) on top — this is what
+  // turns a bare spanning tree (which can look like one snaking line)
+  // into an actual branching web with junctions, like a real road map.
+  const K = n <= 6 ? 2 : 1;
+  for(let i=0;i<n;i++){
+    const dists = [];
+    for(let j=0;j<n;j++){ if(i!==j) dists.push([distSq(i,j), j]); }
+    dists.sort((a,b)=>a[0]-b[0]);
+    for(let k=0;k<Math.min(K, dists.length);k++){
+      addEdge(i, dists[k][1]);
+    }
+  }
+
+  return edges;
+}
+
+function drawRoads(ctx, seeds){
+  const edges = computeRoadNetwork(seeds);
+  edges.forEach(([ai, bi]) => {
+    const a = seeds[ai], b = seeds[bi];
+    const dx = b.x-a.x, dy = b.y-a.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const segments = dist > 180 ? 4 : (dist > 90 ? 3 : 2);
+    const maxOffset = Math.min(24, dist*0.22);
+    const points = generateWaypoints(a.x, a.y, b.x, b.y, segments, a.pid+'_'+b.pid, maxOffset);
+
+    // base dirt path
+    ctx.beginPath();
+    strokeSmoothPath(ctx, points);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(101,76,46,0.55)';
+    ctx.lineWidth = 4.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // worn center track — lighter dashed line for a trodden-path texture
+    ctx.beginPath();
+    strokeSmoothPath(ctx, points);
+    ctx.setLineDash([5, 6]);
+    ctx.strokeStyle = 'rgba(206,178,130,0.6)';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // small junction dots wherever roads meet a player's home point
+  seeds.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 3.2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(101,76,46,0.65)';
+    ctx.fill();
+  });
+}
+
 function drawIslandMap(players, canvasId){
+  ensureMapFeatures((roomState && roomState.mapSeed) || myRoomCode || 'default');
   const canvas = $(canvasId || 'island-canvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0,0,MAP_W,MAP_H);
@@ -957,8 +1305,12 @@ function drawIslandMap(players, canvasId){
   const seeds = computeSeedPositions(playerIds);
 
   const blockSize = 6;
-  for(let by=0; by<MAP_H; by+=blockSize){
-    for(let bx=0; bx<MAP_W; bx+=blockSize){
+  const cols = Math.ceil(MAP_W/blockSize), rows = Math.ceil(MAP_H/blockSize);
+  const ownerGrid = [];
+  for(let row=0; row<rows; row++){
+    ownerGrid.push(new Array(cols).fill(null));
+    for(let col=0; col<cols; col++){
+      const bx = col*blockSize, by = row*blockSize;
       const cx = bx+blockSize/2, cy = by+blockSize/2;
       if(!pointInPolygon(cx,cy,ISLAND_POLY)) continue;
       let best=-1, bestDist=Infinity;
@@ -970,11 +1322,62 @@ function drawIslandMap(players, canvasId){
       const ownerPid = seeds[best].pid;
       const ownerPlayer = players[ownerPid];
       const leaderId = ownerPlayer.leaderId || ownerPid;
+      ownerGrid[row][col] = leaderId;
       const leaderPlayer = players[leaderId] || ownerPlayer;
       ctx.fillStyle = getBannerColor(leaderPlayer.bannerColor).hex;
-      ctx.fillRect(bx,by,blockSize,blockSize);
+      ctx.fillRect(bx, by, blockSize, blockSize);
     }
   }
+
+  // Province border lines wherever two adjacent blocks belong to
+  // different empires — gives each territory a defined edge.
+  ctx.strokeStyle = 'rgba(35,26,14,0.4)';
+  ctx.lineWidth = 1;
+  for(let row=0; row<rows; row++){
+    for(let col=0; col<cols; col++){
+      const owner = ownerGrid[row][col];
+      if(owner===null) continue;
+      const rightOwner = col+1<cols ? ownerGrid[row][col+1] : null;
+      const bottomOwner = row+1<rows ? ownerGrid[row+1][col] : null;
+      const bx = col*blockSize, by = row*blockSize;
+      if(rightOwner!==null && rightOwner!==owner){
+        ctx.beginPath();
+        ctx.moveTo(bx+blockSize, by);
+        ctx.lineTo(bx+blockSize, by+blockSize);
+        ctx.stroke();
+      }
+      if(bottomOwner!==null && bottomOwner!==owner){
+        ctx.beginPath();
+        ctx.moveTo(bx, by+blockSize);
+        ctx.lineTo(bx+blockSize, by+blockSize);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Terrain texture mottles the flat territory colors so they read as
+  // hand-colored rather than digitally flat — clipped to the landmass.
+  ctx.save();
+  ctx.beginPath();
+  ISLAND_POLY.forEach(([x,y],i)=> i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+  ctx.closePath();
+  ctx.clip();
+  drawTerrainTexture(ctx);
+  ctx.restore();
+
+  // Dirt roads connecting every player, clipped to the landmass so
+  // they never spill out over the water.
+  ctx.save();
+  ctx.beginPath();
+  ISLAND_POLY.forEach(([x,y],i)=> i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+  ctx.closePath();
+  ctx.clip();
+  drawRoads(ctx, seeds);
+  ctx.restore();
+
+  drawForests(ctx);
+  drawMountains(ctx);
+  drawParchmentGrain(ctx);
 
   ctx.beginPath();
   ISLAND_POLY.forEach(([x,y],i)=> i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
@@ -982,6 +1385,9 @@ function drawIslandMap(players, canvasId){
   ctx.strokeStyle = 'rgba(50,38,18,0.55)';
   ctx.lineWidth = 4;
   ctx.stroke();
+
+  drawStains(ctx);
+  drawVignette(ctx);
 
   return seeds;
 }
@@ -1507,7 +1913,8 @@ $('btn-start').addEventListener('click', async () => {
     turnOrder,
     currentTurnPlayerId: turnOrder[0],
     log: null,
-    winnerId: null
+    winnerId: null,
+    mapSeed: myRoomCode + '_' + Date.now()
   });
   db.ref('scratchpads/'+myRoomCode).remove();
 });
@@ -1928,7 +2335,8 @@ $('btn-play-again').addEventListener('click', async () => {
     turnOrder: null,
     currentTurnPlayerId: null,
     log: null,
-    winnerId: null
+    winnerId: null,
+    mapSeed: null
   });
   db.ref('scratchpads/'+myRoomCode).remove();
 });
